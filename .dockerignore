@@ -1,0 +1,13 @@
+.git
+.venv
+**/node_modules
+**/.pnpm-store
+**/.pnpm-cache
+**/__pycache__
+**/.pytest_cache
+frontend/dist
+data
+models
+.env*
+**/.env*
+work
