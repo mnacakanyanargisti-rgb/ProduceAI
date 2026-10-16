@@ -547,7 +547,7 @@ function Scanner({
       <PageHeading
         label="THE AI WORKSPACE"
         title="A closer look, powered by vision."
-        description="Upload an apple image to explore classification with a connected research model."
+        description="Upload an apple image for experimental browser screening, or connect a trained research model for classification."
       />
       <div className="status-banner">
         <span className={connected ? "live-dot" : "offline-dot"} />
@@ -555,7 +555,7 @@ function Scanner({
         <span>
           {connected
             ? "Ready for inference"
-            : "Start the API and connect a trained checkpoint to enable real predictions."}
+            : "Browser preview available; connect a trained model for validated predictions."}
         </span>
         <Link to="Research">
           Setup & methodology <ChevronRight size={15} />
@@ -624,7 +624,7 @@ function Scanner({
             onClick={analyze}
           >
             <ScanLine size={19} />
-            {busy ? "Analyzing…" : API ? "Analyze Apple" : "Inspect Image (Preview)"}
+            {busy ? "Analyzing…" : API ? "Analyze Apple" : "Screen Image (Experimental)"}
             <ArrowRight size={17} />
           </button>
           {error && (
@@ -640,21 +640,28 @@ function Scanner({
           </div>
           {visual ? (
             <div aria-live="polite" className="result">
-              <span className="tag">BROWSER IMAGE STATISTICS · EXPERIMENTAL</span>
-              <h3>Image measurements complete</h3>
+              <span className="tag">EXPERIMENTAL SCREENING · NOT AI</span>
+              <h3>Provisional sorting: {visual.suggestedTier}</h3>
+              <p className="muted">
+                {visual.suggestedTier === "Review required"
+                  ? "No automatic tier assigned — human review required."
+                  : "Illustrative A/B/C image screening only. Not UNECE Extra/I/II, not a verified commercial quality grade."}
+              </p>
               <dl>
                 <dt>Resolution</dt><dd>{visual.width} × {visual.height} px</dd>
                 <dt>Mean brightness</dt><dd>{visual.meanBrightness.toFixed(1)}%</dd>
                 <dt>Mean saturation</dt><dd>{visual.meanSaturation.toFixed(1)}%</dd>
-                <dt>Dark pixels</dt><dd>{visual.darkPixelPercent.toFixed(1)}%</dd>
+                <dt>Whole-photo dark pixels</dt><dd>{visual.darkPixelPercent.toFixed(1)}%</dd>
+                <dt>Center-sample dark pixels</dt><dd>{visual.estimatedDarkArea.toFixed(1)}%</dd>
+                <dt>Screening reliability</dt><dd>{visual.segmentationConfidence}</dd>
                 <dt>Pixels sampled</dt><dd>{visual.sampledPixels.toLocaleString()}</dd>
               </dl>
+              <p className="muted">{visual.notes}</p>
               <p className="muted">
-                These are actual measurements of the entire uploaded photograph,
-                including its background. Dark pixels are NOT necessarily apple
-                defects. No AI model was run, and no freshness, grade, price, or
-                food-safety conclusion can be drawn from these measurements.
-                A trained model and segmented apple region are needed for that.
+                The central ellipse is only a rough sampling region, not an
+                apple segmentation or defect mask. No trained model was run.
+                Shadows, background and apple variety can change the tier.
+                Do not use this result to set prices, reject food, or assess safety.
               </p>
             </div>
           ) : result ? (
