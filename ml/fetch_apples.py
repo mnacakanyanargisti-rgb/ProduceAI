@@ -35,10 +35,18 @@ def main():
         for row in rows:
             raw_label = row["label"]
             name = names[int(raw_label)] if names and isinstance(raw_label, int) else str(raw_label)
-            name = name.lower().replace(" ", "_")
-            if name not in {"fresh_apple", "rotten_apple"}:
+            name = name.lower().replace(" ", "_").replace("-", "_")
+            # Accept common class names such as "freshapples", "rottenapples",
+            # "fresh_apple", "apple_fresh"; never match another fruit.
+            normalized = name.replace("_", "")
+            if "apple" not in normalized:
                 continue
-            category = "fresh" if name == "fresh_apple" else "rotten"
+            if "fresh" in normalized and "rotten" not in normalized:
+                category = "fresh"
+            elif any(word in normalized for word in ("rotten", "defective", "spoiled")):
+                category = "rotten"
+            else:
+                continue
             raw_image = row["image"]
             if isinstance(raw_image, Image.Image):
                 image = raw_image
