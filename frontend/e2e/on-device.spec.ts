@@ -33,5 +33,5 @@ test("published MobileNet classifies an image on-device", async ({ page }) => {
   await expect(page.getByText(/MobileNetV2 \(on-device ONNX\)/)).toBeVisible();
   await expect(page.getByText("Fresh Apple", { exact: true }).or(
     page.getByRole("heading", { name: "Rotten or Defective Apple" }),
-  ).first().toBeVisible();
+  ).first()).toBeVisible();
 });
