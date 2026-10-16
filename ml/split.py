@@ -33,7 +33,8 @@ def main():
                 image.verify()
             rows.append(
                 {"path": path.resolve().as_posix(), "label": label, "sha256": digest,
-                 "source_group": path.name.split("__", 1)[0] if label == 2 else folder}
+                 "source_group": (path.name.split("__", 1)[0] if label == 2 else
+                                  ("orchard_" + folder if path.name.startswith("orchard__") else folder))}
             )
     df = pd.DataFrame(rows)
     if df.empty or set(df.label) != {0, 1, 2} or df.groupby("label").size().min() < 10:
