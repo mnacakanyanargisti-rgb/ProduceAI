@@ -44,7 +44,7 @@ def main():
             raise ValueError("Test image changed.")
         with Image.open(row.path) as image:
             result = predictor.predict(ImageOps.exif_transpose(image).convert("RGB"))
-        predictions.append(LABELS.index(result["label"]))
+        predictions.append(LABELS.index(result["label"]) if result["label"] in LABELS else len(LABELS))
         durations.append(result["inference_ms"])
     precision, recall, f1, _ = precision_recall_fscore_support(
         test.label, predictions, labels=list(range(len(LABELS))), average="macro", zero_division=0
@@ -79,13 +79,14 @@ def main():
             raise ValueError(f"Missing negative test set for {required}")
     result.update(
         negative_group_rejection=group_metrics,
-        apple_acceptance=float((negatives[negatives.label.isin([0, 1])].predicted != 2).mean()),
+        apple_acceptance=float(negatives[negatives.label.isin([0, 1])].predicted.isin([0, 1]).mean()),
+        uncertain_count=int((negatives.predicted == len(LABELS)).sum()),
         accuracy=float(accuracy_score(test.label, predictions)),
         precision=float(precision),
         recall=float(recall),
         f1=float(f1),
         confusion_matrix=confusion_matrix(
-            test.label, predictions, labels=list(range(len(LABELS)))
+            test.label, predictions, labels=list(range(len(LABELS) + 1))
         ).tolist(),
         test_samples=len(test),
         inference_ms=float(np.mean(durations)),
