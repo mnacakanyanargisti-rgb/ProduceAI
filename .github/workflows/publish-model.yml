@@ -44,7 +44,7 @@ jobs:
             --evaluation published/experiments/results.json \
             --output-dir frontend/public/models
           cp published/experiments/results.json frontend/public/experiments/results.json
-          test -s frontend/public/models/apple-mobilenet-open-set-v2.onnx
+          test -s frontend/public/models/apple-mobilenet-open-set-v3.onnx
           test -s frontend/public/models/manifest.json
       - name: Upload tested model as durable backup
         uses: actions/upload-artifact@v4
@@ -58,8 +58,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f frontend/public/models/apple-mobilenet-open-set-v2.onnx
-          git rm -f --ignore-unmatch frontend/public/models/apple-mobilenet.onnx
+          git add -f frontend/public/models/apple-mobilenet-open-set-v3.onnx
+          git rm -f --ignore-unmatch frontend/public/models/apple-mobilenet.onnx frontend/public/models/apple-mobilenet-open-set-v2.onnx
           git add -f frontend/public/models/manifest.json
           git add frontend/public/experiments/results.json
           if git diff --cached --quiet; then
