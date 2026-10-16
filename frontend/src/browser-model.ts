@@ -44,7 +44,7 @@ function isManifest(value: unknown): value is BrowserModelMetadata {
     m.labels[0] === LABELS[0] && m.labels[1] === LABELS[1] && m.labels[2] === LABELS[2] &&
     m.min_apple_confidence === 0.8 && m.max_nonapple_probability === 0.15 &&
     m.input_size === 224 &&
-    m.onnx_file === "apple-mobilenet.onnx" &&
+    m.onnx_file === "apple-mobilenet-open-set-v2.onnx" &&
     Number.isFinite(m.accuracy) && (m.accuracy ?? -1) >= 0 && (m.accuracy ?? 2) <= 1 &&
     Number.isFinite(m.test_samples) && (m.test_samples ?? 0) >= 10;
 }
