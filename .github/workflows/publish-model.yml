@@ -1,0 +1,74 @@
+name: Publish trained apple model
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-model.yml'
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Successful training workflow run ID (leave empty for initial run)"
+        required: false
+        type: string
+  workflow_run:
+    workflows: ["Train apple classifier (manual)"]
+    types: [completed]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - name: Download successful trained checkpoint and held-out evaluation
+        uses: actions/download-artifact@v4
+        with:
+          name: apple-mobilenet-checkpoint-and-metrics
+          path: published
+          run-id: ${{ inputs.run_id || github.event.workflow_run.id || '38952030576' }}
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install model export dependencies
+        run: |
+          pip install -r backend/requirements.txt
+          pip install "onnx>=1.17,<2" "onnxruntime>=1.20,<2"
+      - name: Export and verify browser model
+        run: |
+          python -m ml.export_browser \
+            --checkpoint published/models/mobilenet.pt \
+            --evaluation published/experiments/results.json \
+            --output-dir frontend/public/models
+          cp published/experiments/results.json frontend/public/experiments/results.json
+          test -s frontend/public/models/apple-mobilenet.onnx
+          test -s frontend/public/models/manifest.json
+      - name: Upload tested model as durable backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: publishable-apple-onnx
+          path: |
+            frontend/public/models/
+            frontend/public/experiments/results.json
+          retention-days: 30
+      - name: Commit actual ONNX model into GitHub Pages source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f frontend/public/models/apple-mobilenet.onnx
+          git add frontend/public/models/manifest.json frontend/public/experiments/results.json
+          if git diff --cached --quiet; then
+            echo "Model already up to date."
+            exit 0
+          fi
+          git commit -m "Publish evaluated ONNX apple classifier for offline browser inference"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
