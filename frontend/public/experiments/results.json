@@ -1,1 +1,83 @@
-{"schema_version":1,"experiments":[]}
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "name": "mobilenet",
+      "version": "hf-apples-v1",
+      "seed": 42,
+      "dataset": "https://github.com/Bangkit-JKT2-D/fruits-fresh-rotten-classification",
+      "manifest_sha256": "af02c198349ebe627a60b1ac7860a76fdf482d3960cb7fa6deda0cb98259f030",
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.6214789147414859,
+          "val_loss": 0.48325591948297286
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.40533109458666,
+          "val_loss": 0.3429757533250032
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.29610883432721335,
+          "val_loss": 0.26636031490785106
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.23838406280865745,
+          "val_loss": 0.22121451795101166
+        },
+        {
+          "epoch": 5,
+          "train_loss": 0.21717254474522577,
+          "val_loss": 0.1908172302775913
+        },
+        {
+          "epoch": 6,
+          "train_loss": 0.19260313208141025,
+          "val_loss": 0.16919717303028814
+        },
+        {
+          "epoch": 7,
+          "train_loss": 0.1754875790978235,
+          "val_loss": 0.149844941717607
+        },
+        {
+          "epoch": 8,
+          "train_loss": 0.16252595943117898,
+          "val_loss": 0.13522015346421135
+        }
+      ],
+      "environment": {
+        "python": "3.11.17",
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "packages": {
+          "torch": "2.14.1",
+          "torchvision": "0.29.1",
+          "scikit-learn": "1.9.1",
+          "numpy": "2.4.6",
+          "pandas": "2.3.3",
+          "opencv-python-headless": "4.14.0.94"
+        }
+      },
+      "accuracy": 0.9629629629629629,
+      "precision": 0.9629629629629629,
+      "recall": 0.9629629629629629,
+      "f1": 0.9629629629629629,
+      "confusion_matrix": [
+        [
+          26,
+          1
+        ],
+        [
+          1,
+          26
+        ]
+      ],
+      "test_samples": 54,
+      "inference_ms": 18.753882351850955,
+      "latency_method": "CPU; preprocessing + prediction; warmup excluded"
+    }
+  ]
+}

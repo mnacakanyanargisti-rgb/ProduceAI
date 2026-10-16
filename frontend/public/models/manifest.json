@@ -1,0 +1,16 @@
+{
+  "model_name": "MobileNetV2",
+  "model_version": "hf-apples-v1",
+  "labels": [
+    "Fresh Apple",
+    "Rotten or Defective Apple"
+  ],
+  "input_size": 224,
+  "onnx_file": "apple-mobilenet.onnx",
+  "accuracy": 0.9629629629629629,
+  "f1": 0.9629629629629629,
+  "test_samples": 54,
+  "dataset": "https://github.com/Bangkit-JKT2-D/fruits-fresh-rotten-classification",
+  "limitations": "Binary fresh-vs-rotten research classifier, not commercial grading or food safety. Collected images might not generalize to real orchards.",
+  "model_sha256": "5d1062df7cda98119f2fd8cfd67d2073124a96735c49ef611fbbc0e10fb80c68"
+}
