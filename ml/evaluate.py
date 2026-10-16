@@ -47,7 +47,7 @@ def main():
         predictions.append(LABELS.index(result["label"]))
         durations.append(result["inference_ms"])
     precision, recall, f1, _ = precision_recall_fscore_support(
-        test.label, predictions, labels=[0, 1], average="macro", zero_division=0
+        test.label, predictions, labels=list(range(len(LABELS))), average="macro", zero_division=0
     )
     result = {
         k: metadata[k]
@@ -61,13 +61,31 @@ def main():
             "environment",
         ]
     }
+    # Check the rejection rate of relevant negatives separately; an overall
+    # accuracy alone can hide embarrassing candy and cigarette errors.
+    negatives = test.reset_index(drop=True).copy()
+    negatives["predicted"] = predictions
+    group_metrics = {}
+    if "source_group" in negatives.columns:
+        for group, rows in negatives[negatives.label == 2].groupby("source_group"):
+            if len(rows) < 3:
+                raise ValueError(f"Too few held-out examples for negative group {group}")
+            group_metrics[str(group)] = {
+                "samples": int(len(rows)),
+                "rejection_rate": float((rows.predicted == 2).mean()),
+            }
+    for required in ("cigarette", "candy"):
+        if required not in group_metrics:
+            raise ValueError(f"Missing negative test set for {required}")
     result.update(
+        negative_group_rejection=group_metrics,
+        apple_acceptance=float((negatives[negatives.label.isin([0, 1])].predicted != 2).mean()),
         accuracy=float(accuracy_score(test.label, predictions)),
         precision=float(precision),
         recall=float(recall),
         f1=float(f1),
         confusion_matrix=confusion_matrix(
-            test.label, predictions, labels=[0, 1]
+            test.label, predictions, labels=list(range(len(LABELS)))
         ).tolist(),
         test_samples=len(test),
         inference_ms=float(np.mean(durations)),
