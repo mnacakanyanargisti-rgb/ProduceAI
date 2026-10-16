@@ -25,10 +25,10 @@ SOURCES = [
     # (display_group, repository, branch, folder, max_items)
     ("cigarette", "LoaferCH/dataset_classification_cigarettes", "master", "cigs", 90),
     ("cigarette_other", "LoaferCH/dataset_classification_cigarettes", "master", "other", 35),
-    ("candy", "PerceptiLabs/Recognizing-Groceries", "master", "data/CANDY", 80),
-    ("chocolate", "PerceptiLabs/Recognizing-Groceries", "master", "data/CHOCOLATE", 35),
-    ("cake", "PerceptiLabs/Recognizing-Groceries", "master", "data/CAKE", 30),
-    ("soda", "PerceptiLabs/Recognizing-Groceries", "master", "data/SODA", 30),
+    ("candy", "PerceptiLabs/Recognizing-Groceries", "main", "data/CANDY", 80),
+    ("chocolate", "PerceptiLabs/Recognizing-Groceries", "main", "data/CHOCOLATE", 35),
+    ("cake", "PerceptiLabs/Recognizing-Groceries", "main", "data/CAKE", 30),
+    ("soda", "PerceptiLabs/Recognizing-Groceries", "main", "data/SODA", 30),
     ("banana", "Bangkit-JKT2-D/fruits-fresh-rotten-classification", "master", "Datasets/train/freshbanana", 60),
     ("orange", "Bangkit-JKT2-D/fruits-fresh-rotten-classification", "master", "Datasets/train/freshoranges", 60),
 ]
