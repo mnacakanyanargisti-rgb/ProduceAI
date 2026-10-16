@@ -6,6 +6,7 @@ on:
       - 'ml/fetch_apples.py'
       - 'ml/split.py'
       - 'docs/TRAIN_REAL_MODEL.md'
+      - 'ml/fetch_github_apples.py'
   workflow_dispatch:
     inputs:
       epochs:
@@ -32,10 +33,10 @@ jobs:
           pip install -r backend/requirements.txt
           pip install "datasets>=3,<5"
       - name: Import fresh and rotten apple images
-        run: python -m ml.fetch_apples --output data/apples
+        run: python -m ml.fetch_github_apples --output data/apples --per-class 180
       - name: Freeze stratified manifest
         run: |
-          python -m ml.split --data data/apples --source "https://huggingface.co/datasets/menasi11/fruit-classification" --license "Unverified - research only pending license confirmation"
+          python -m ml.split --data data/apples --source "https://github.com/Bangkit-JKT2-D/fruits-fresh-rotten-classification" --license "Unverified - research only pending license confirmation"
       - name: Train MobileNetV2
         run: python -m ml.train --manifest data/manifest.csv --model mobilenet --epochs "${EPOCHS}" --batch-size 16 --version hf-apples-v1 --output models
         env:
