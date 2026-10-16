@@ -36,7 +36,7 @@ def main():
             raw_label = row["label"]
             name = names[int(raw_label)] if names and isinstance(raw_label, int) else str(raw_label)
             if counts["fresh"] + counts["rotten"] == 0 and split == "train" and row_index == 0:
-                print("Dataset label examples:", names, "first label:", repr(raw_label))
+                print("Dataset label examples:", names, "first label:", repr(raw_label), "columns:", list(row.keys()), "sample values:", {k: str(v)[:160] for k, v in row.items() if k != "image"}, flush=True)
             name = name.lower().replace(" ", "_").replace("-", "_")
             # Accept common class names such as "freshapples", "rottenapples",
             # "fresh_apple", "apple_fresh"; never match another fruit.
