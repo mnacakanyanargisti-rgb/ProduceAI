@@ -390,7 +390,7 @@ function Home() {
             <span className="tag">TRANSFER</span>
           </div>
           <p>
-            <Circle size={9} /> Experiments pending · No performance claims yet
+            <Circle size={9} /> See recorded held-out results in Model Comparison
           </p>
         </div>
       </section>
@@ -1100,12 +1100,13 @@ function Research() {
             </article>
           ))}
           <section className="panel">
-            <h3>Connect a trained model</h3>
+            <h3>Browser model and optional API</h3>
             <p>
-              Follow README.md: install dependencies, prepare the dataset, run
-              the split and training scripts, evaluate the selected checkpoint,
-              then start FastAPI with MODEL_PATH set. Configure VITE_API_URL in
-              the frontend and enable the frontend origin in ALLOWED_ORIGINS.
+              The published evaluated MobileNetV2 ONNX checkpoint runs directly
+              in your browser without uploading the photo to a server. For a
+              separate FastAPI deployment, configure MODEL_PATH and VITE_API_URL
+              and allow the frontend origin using ALLOWED_ORIGINS. Classifications
+              are research predictions, not food-safety or commercial grading.
             </p>
           </section>
         </div>
@@ -1162,9 +1163,10 @@ function About() {
           <h3>A portfolio with a research foundation</h3>
           <p>
             Built for university presentations, reproducible experiments, and
-            continued exploration. The infrastructure is ready for training and
-            integration; a model is not trained, validated, or deployed by this
-            source package.
+            continued exploration. An evaluated MobileNetV2 model is provided for
+            on-device fresh-versus-rotten apple classification. Commercial
+            quality grades and defect localization still require separate
+            labeled training data and independent evaluation.
           </p>
         </div>
       </section>
