@@ -8,6 +8,22 @@ import torch
 from ml.models import LABELS, build_model, transform, features
 
 
+# Conservative open-set gate: a fresh/rotten probability is *not* enough
+# until the model also has little evidence for the "not an apple" class.
+MIN_APPLE_CONFIDENCE = 0.80
+MAX_NONAPPLE_PROBABILITY = 0.15
+
+
+def classify_probabilities(probabilities):
+    if len(probabilities) != len(LABELS) or not np.isfinite(probabilities).all():
+        raise ValueError("Invalid model output")
+    best_apple = int(np.argmax(probabilities[:2]))
+    if (probabilities[best_apple] < MIN_APPLE_CONFIDENCE or
+            probabilities[2] > MAX_NONAPPLE_PROBABILITY):
+        return LABELS[2]
+    return LABELS[best_apple]
+
+
 class Predictor:
     def __init__(self, path):
         path = Path(path)
@@ -41,10 +57,10 @@ class Predictor:
         else:
             probabilities = self.model.predict_proba([features(image)])[0]
         duration = (time.perf_counter() - start) * 1000
-        if len(probabilities) != 2 or not np.isfinite(probabilities).all():
+        if len(probabilities) != len(LABELS) or not np.isfinite(probabilities).all():
             raise ValueError("Invalid model output")
         return {
-            "label": LABELS[int(probabilities.argmax())],
+            "label": classify_probabilities(probabilities),
             "probabilities": dict(zip(LABELS, map(float, probabilities))),
             "model_name": self.name,
             "model_version": self.version,
