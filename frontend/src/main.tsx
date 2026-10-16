@@ -697,7 +697,7 @@ function Scanner({
                 </p>
               )}
               {Object.entries(result.probabilities)
-                .filter(([label]) => result.label !== "Not an Apple" || label === "Not an Apple")
+                .filter(() => result.label !== "Not an Apple")
                 .map(([label, p]) => (
                 <div className="probability" key={label}>
                   <div>
