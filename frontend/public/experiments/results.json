@@ -3,50 +3,70 @@
   "experiments": [
     {
       "name": "mobilenet",
-      "version": "hf-apples-v1",
+      "version": "apples-open-set-v2",
       "seed": 42,
-      "dataset": "https://github.com/Bangkit-JKT2-D/fruits-fresh-rotten-classification",
-      "manifest_sha256": "af02c198349ebe627a60b1ac7860a76fdf482d3960cb7fa6deda0cb98259f030",
+      "dataset": "Bangkit-JKT2-D/fruits-fresh-rotten-classification; LoaferCH/dataset_classification_cigarettes; PerceptiLabs/Recognizing-Groceries",
+      "manifest_sha256": "35f391911eded6b8757146ebd99251de689113067d3af7ce86bddfd1f8aad766",
       "history": [
         {
           "epoch": 1,
-          "train_loss": 0.6214789147414859,
-          "val_loss": 0.48325591948297286
+          "train_loss": 0.6129238365334032,
+          "val_loss": 0.38298685759560674
         },
         {
           "epoch": 2,
-          "train_loss": 0.40533109458666,
-          "val_loss": 0.3429757533250032
+          "train_loss": 0.27273442271428233,
+          "val_loss": 0.2593901554743449
         },
         {
           "epoch": 3,
-          "train_loss": 0.29610883432721335,
-          "val_loss": 0.26636031490785106
+          "train_loss": 0.1870035788133031,
+          "val_loss": 0.20398326421904767
         },
         {
           "epoch": 4,
-          "train_loss": 0.23838406280865745,
-          "val_loss": 0.22121451795101166
+          "train_loss": 0.14310429395336807,
+          "val_loss": 0.17169085055844396
         },
         {
           "epoch": 5,
-          "train_loss": 0.21717254474522577,
-          "val_loss": 0.1908172302775913
+          "train_loss": 0.11964356637263036,
+          "val_loss": 0.15128914578857586
         },
         {
           "epoch": 6,
-          "train_loss": 0.19260313208141025,
-          "val_loss": 0.16919717303028814
+          "train_loss": 0.10345011310917991,
+          "val_loss": 0.13716117795715985
         },
         {
           "epoch": 7,
-          "train_loss": 0.1754875790978235,
-          "val_loss": 0.149844941717607
+          "train_loss": 0.09259269918714251,
+          "val_loss": 0.12692075464715305
         },
         {
           "epoch": 8,
-          "train_loss": 0.16252595943117898,
-          "val_loss": 0.13522015346421135
+          "train_loss": 0.08101475200591943,
+          "val_loss": 0.11835260154345097
+        },
+        {
+          "epoch": 9,
+          "train_loss": 0.07509823213075544,
+          "val_loss": 0.11191708250687672
+        },
+        {
+          "epoch": 10,
+          "train_loss": 0.06919389411861643,
+          "val_loss": 0.10659371367377093
+        },
+        {
+          "epoch": 11,
+          "train_loss": 0.062159718184871766,
+          "val_loss": 0.10210158886053623
+        },
+        {
+          "epoch": 12,
+          "train_loss": 0.053318120810397704,
+          "val_loss": 0.09772157949260157
         }
       ],
       "environment": {
@@ -61,22 +81,64 @@
           "opencv-python-headless": "4.14.0.94"
         }
       },
-      "accuracy": 0.9629629629629629,
-      "precision": 0.9629629629629629,
-      "recall": 0.9629629629629629,
-      "f1": 0.9629629629629629,
+      "negative_group_rejection": {
+        "banana": {
+          "samples": 9,
+          "rejection_rate": 1.0
+        },
+        "cake": {
+          "samples": 5,
+          "rejection_rate": 1.0
+        },
+        "candy": {
+          "samples": 12,
+          "rejection_rate": 1.0
+        },
+        "chocolate": {
+          "samples": 5,
+          "rejection_rate": 1.0
+        },
+        "cigarette": {
+          "samples": 14,
+          "rejection_rate": 1.0
+        },
+        "cigarette_other": {
+          "samples": 5,
+          "rejection_rate": 1.0
+        },
+        "orange": {
+          "samples": 9,
+          "rejection_rate": 1.0
+        },
+        "soda": {
+          "samples": 4,
+          "rejection_rate": 1.0
+        }
+      },
+      "apple_acceptance": 0.9074074074074074,
+      "accuracy": 0.9487179487179487,
+      "precision": 0.9631445170660857,
+      "recall": 0.9259259259259259,
+      "f1": 0.9409180692350448,
       "confusion_matrix": [
         [
           26,
+          0,
           1
         ],
         [
           1,
-          26
+          22,
+          4
+        ],
+        [
+          0,
+          0,
+          63
         ]
       ],
-      "test_samples": 54,
-      "inference_ms": 18.753882351850955,
+      "test_samples": 117,
+      "inference_ms": 14.203735777776247,
       "latency_method": "CPU; preprocessing + prediction; warmup excluded"
     }
   ]
