@@ -34,7 +34,9 @@ jobs:
         run: |
           python -m ml.split --data data/apples --source "https://huggingface.co/datasets/menasi11/fruit-classification" --license "Unverified - research only pending license confirmation"
       - name: Train MobileNetV2
-        run: python -m ml.train --manifest data/manifest.csv --model mobilenet --epochs ${{ inputs.epochs }} --batch-size 16 --version hf-apples-v1 --output models
+        run: python -m ml.train --manifest data/manifest.csv --model mobilenet --epochs "${EPOCHS}" --batch-size 16 --version hf-apples-v1 --output models
+        env:
+          EPOCHS: ${{ inputs.epochs || '8' }}
       - name: Evaluate on untouched split
         run: python -m ml.evaluate --manifest data/manifest.csv --checkpoint models/mobilenet.pt --output experiments/results.json
       - name: Upload checkpoint and metrics (private workflow artifact)
