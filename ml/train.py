@@ -113,9 +113,15 @@ def main():
             for name, frame in [("train", train), ("val", val)]
         }
         model = build_model(a.model, pretrained=a.model == "mobilenet")
-        optimizer = torch.optim.Adam(
-            filter(lambda p: p.requires_grad, model.parameters()), lr=0.001
-        )
+        if a.model == "mobilenet":
+            optimizer = torch.optim.Adam([
+                {"params": model.classifier.parameters(), "lr": 4e-4},
+                {"params": model.features[-2:].parameters(), "lr": 3e-5},
+            ], weight_decay=1e-4)
+        else:
+            optimizer = torch.optim.Adam(
+                filter(lambda p: p.requires_grad, model.parameters()), lr=0.001
+            )
         loss_fn = torch.nn.CrossEntropyLoss()
         best = float("inf")
         for epoch in range(a.epochs):
