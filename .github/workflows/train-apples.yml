@@ -4,6 +4,7 @@ on:
     paths:
       - '.github/workflows/train-apples.yml'
       - 'ml/fetch_apples.py'
+      - 'ml/split.py'
   workflow_dispatch:
     inputs:
       epochs:
