@@ -5,6 +5,7 @@ on:
       - '.github/workflows/train-apples.yml'
       - 'ml/fetch_apples.py'
       - 'ml/split.py'
+      - 'docs/TRAIN_REAL_MODEL.md'
   workflow_dispatch:
     inputs:
       epochs:
