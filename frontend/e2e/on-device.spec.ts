@@ -8,7 +8,7 @@ test("published MobileNet classifies an image on-device", async ({ page }) => {
     ? JSON.parse(readFileSync("public/models/manifest.json", "utf-8"))
     : null;
   test.skip(
-    !existsSync("public/models/apple-mobilenet.onnx") ||
+    !existsSync("public/models/apple-mobilenet-open-set-v2.onnx") ||
     manifest?.labels?.[2] !== "Not an Apple",
     "Trained three-class model not yet published",
   );
