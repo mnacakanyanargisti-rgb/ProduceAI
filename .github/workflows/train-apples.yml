@@ -1,0 +1,44 @@
+name: Train apple classifier (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      epochs:
+        description: "Number of MobileNetV2 epochs"
+        required: true
+        default: "8"
+        type: choice
+        options: ["4", "8", "12"]
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install training dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install "datasets>=3,<5"
+      - name: Import fresh and rotten apple images
+        run: python -m ml.fetch_apples --output data/apples
+      - name: Freeze stratified manifest
+        run: python -m ml.split --data data/apples --source "https://huggingface.co/datasets/menasi11/fruit-classification" --license "Unverified: research-only pending license confirmation"
+      - name: Train MobileNetV2
+        run: python -m ml.train --manifest data/manifest.csv --model mobilenet --epochs ${{ inputs.epochs }} --batch-size 16 --version hf-apples-v1 --output models
+      - name: Evaluate on untouched split
+        run: python -m ml.evaluate --manifest data/manifest.csv --model-path models/mobilenet.pt --output experiments
+      - name: Upload checkpoint and metrics (private workflow artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-mobilenet-checkpoint-and-metrics
+          path: |
+            models/mobilenet.pt
+            models/mobilenet.metadata.json
+            experiments/
+          retention-days: 14
