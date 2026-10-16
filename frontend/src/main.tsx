@@ -564,7 +564,7 @@ function Scanner({
       <PageHeading
         label="THE AI WORKSPACE"
         title="A closer look, powered by vision."
-        description="Upload a photo. The AI first verifies that the object looks like an apple, then classifies supported apples as fresh or defective."
+        description="Upload one apple in natural light. The model classifies fresh/defective apples and flags confident non-apple or uncertain images instead of making up a grade."
       />
       <div className="status-banner">
         <span className={connected || browserModel ? "live-dot" : "offline-dot"} />
@@ -689,15 +689,22 @@ function Scanner({
                 <Check />
               </span>
               <p>MODEL PREDICTION</p>
-              <h2>{result.label}</h2>
+              <h2>{result.label === "Unable to Verify" ? "Unable to Verify — Անորոշ արդյունք" : result.label}</h2>
               {result.label === "Not an Apple" && (
                 <p className="error" role="status" style={{ marginBottom: 14 }}>
                   Սա խնձոր չէ — Not an Apple. Upload one real apple against a
                   clear background. No fresh/rotten grade has been assigned.
                 </p>
               )}
+              {result.label === "Unable to Verify" && (
+                <p className="error" role="status" style={{ marginBottom: 14 }}>
+                  Մոդելը վստահ չէ, թե նկարում խնձոր է։ Սա չի նշանակում, որ խնձոր չէ։
+                  Նորից նկարիր մեկ ամբողջ խնձոր՝ ավելի մոտիկից, պարզ ֆոնով և լավ լուսավորության տակ։
+                  Որակի գնահատական չի տրվել։
+                </p>
+              )}
               {Object.entries(result.probabilities)
-                .filter(() => result.label !== "Not an Apple")
+                .filter(() => result.label !== "Not an Apple" && result.label !== "Unable to Verify")
                 .map(([label, p]) => (
                 <div className="probability" key={label}>
                   <div>
@@ -717,8 +724,10 @@ function Scanner({
               </dl>
               <p className="muted">
                 {result.label === "Not an Apple"
-                  ? "Apple verification failed or the model was uncertain. No apple quality assessment was made. Try a well-lit photo of one apple."
-                  : "Fresh/defective classification is made only after apple verification. Probabilities reflect model confidence, not food safety or a commercial grade."}
+                  ? "The classifier detected non-apple evidence. No apple freshness score was assigned. This is an ML estimate, not proof."
+                  : result.label === "Unable to Verify"
+                    ? "This image is ambiguous. We cannot confirm or deny it contains an apple. No freshness classification has been assigned."
+                    : "Fresh/defective classification is made after apple verification. Probabilities are model confidence, not food-safety or a commercial grade."}
               </p>
               {storageWarning && (
                 <p role="alert" className="error">
@@ -913,10 +922,12 @@ function Analytics({
   const fresh = history.filter((p) => p.label === "Fresh Apple").length;
   const defective = history.filter((p) => p.label === "Rotten or Defective Apple").length;
   const notApple = history.filter((p) => p.label === "Not an Apple").length;
+  const uncertain = history.filter((p) => p.label === "Unable to Verify").length;
   const counts = [
     { name: "Fresh", count: fresh },
     { name: "Defective", count: defective },
     { name: "Not an Apple", count: notApple },
+    { name: "Uncertain", count: uncertain },
   ];
   const models = Object.entries(
     history.reduce<Record<string, number>>((acc, p) => {
@@ -949,6 +960,7 @@ function Analytics({
             ["Fresh apples", fresh, Apple],
             ["Defective apples", defective, Leaf],
             ["Not apples", notApple, X],
+            ["Uncertain", uncertain, ScanLine],
             [
               "Average inference",
               history.length
@@ -1064,7 +1076,7 @@ const methodology = [
   [
     "07",
     "Limitations that matter",
-    "The model adds non-apple rejection but cannot guarantee recognizing every unfamiliar object. Unseen cultivars, unusual lighting, and deceptive backgrounds remain risks. Uncertain predictions are rejected; softmax probabilities are not guarantees. Defect locations and formal grades are not provided.",
+    "The model recognizes three classes, but real-phone images can differ from training data. Low-confidence ambiguous images are marked 'Unable to Verify', never automatically declared 'Not an Apple'. Official independent orchard acceptance and negative-source rejection are evaluated, but performance on all phones is not guaranteed.",
   ],
   [
     "08",
