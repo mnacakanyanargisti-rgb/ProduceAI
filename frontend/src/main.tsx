@@ -730,6 +730,25 @@ function Scanner({
                   <meter min={0} max={1} value={p} />
                 </div>
               ))}
+              {(result.label === "Not an Apple" || result.label === "Unable to Verify") && (
+                <details style={{ marginTop: 14, marginBottom: 14 }}>
+                  <summary style={{ cursor: "pointer", fontWeight: 600 }}>Why did the AI reject this image? · Ինչո՞ւ չճանաչեց</summary>
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    Diagnostic model probabilities, NOT apple health percentages. These help us find false rejections.
+                  </p>
+                  <dl>
+                    <dt>Fresh apple evidence</dt>
+                    <dd>{((result.probabilities["Fresh Apple"] ?? 0) * 100).toFixed(1)}%</dd>
+                    <dt>Defective apple evidence</dt>
+                    <dd>{((result.probabilities["Rotten or Defective Apple"] ?? 0) * 100).toFixed(1)}%</dd>
+                    <dt>Non-apple evidence</dt>
+                    <dd>{((result.probabilities["Not an Apple"] ?? 0) * 100).toFixed(1)}%</dd>
+                  </dl>
+                  <p className="muted">
+                    Model: {result.model_version}. If this is clearly an apple, share the original image and these diagnostic values.
+                  </p>
+                </details>
+              )}
               <dl>
                 <dt>Model</dt>
                 <dd>{result.model_name}</dd>
