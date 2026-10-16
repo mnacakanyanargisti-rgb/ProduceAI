@@ -46,7 +46,7 @@ def main():
     model.load_state_dict(data["state_dict"])
     model.eval()
     a.output_dir.mkdir(parents=True, exist_ok=True)
-    destination = a.output_dir / "apple-mobilenet.onnx"
+    destination = a.output_dir / "apple-mobilenet-open-set-v2.onnx"
     torch.manual_seed(123)
     sample = torch.randn(1, 3, 224, 224)
     torch.onnx.export(
