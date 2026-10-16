@@ -1,5 +1,5 @@
 export type Prediction = {
-  label: "Fresh Apple" | "Rotten or Defective Apple";
+  label: "Fresh Apple" | "Rotten or Defective Apple" | "Not an Apple";
   probabilities: Record<string, number>;
   model_name: string;
   model_version: string;
@@ -21,14 +21,14 @@ export function parsePrediction(
   const p = value as Prediction;
   if (
     !p ||
-    !["Fresh Apple", "Rotten or Defective Apple"].includes(p.label) ||
+    !["Fresh Apple", "Rotten or Defective Apple", "Not an Apple"].includes(p.label) ||
     typeof p.model_name !== "string" ||
     typeof p.model_version !== "string" ||
     !Number.isFinite(p.inference_ms) ||
     p.inference_ms < 0
   )
     throw new Error("The API returned an invalid prediction.");
-  const values = ["Fresh Apple", "Rotten or Defective Apple"].map(
+  const values = ["Fresh Apple", "Rotten or Defective Apple", "Not an Apple"].map(
     (k) => p.probabilities?.[k],
   );
   if (
