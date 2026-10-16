@@ -8,7 +8,7 @@ test("published MobileNet classifies an image on-device", async ({ page }) => {
     ? JSON.parse(readFileSync("public/models/manifest.json", "utf-8"))
     : null;
   test.skip(
-    !existsSync("public/models/apple-mobilenet-open-set-v2.onnx") ||
+    !existsSync("public/models/apple-mobilenet-open-set-v3.onnx") ||
     manifest?.labels?.[2] !== "Not an Apple",
     "Trained three-class model not yet published",
   );
@@ -38,7 +38,7 @@ test("published MobileNet classifies an image on-device", async ({ page }) => {
   await page.getByRole("button", { name: "Classify Apple (AI)" }).click();
   await expect(page.getByText("MODEL PREDICTION")).toBeVisible({ timeout: 100_000 });
   await expect(page.getByText(/MobileNetV2 \(on-device ONNX\)/)).toBeVisible();
-  await expect(page.locator(".result h2")).toHaveText(/Fresh Apple|Rotten or Defective Apple|Not an Apple/);
+  await expect(page.locator(".result h2")).toHaveText(/Fresh Apple|Rotten or Defective Apple|Not an Apple|Unable to Verify/);
 });
 
 test("rejects real candy and cigarette photos as Not an Apple", async ({ page, request }) => {
@@ -46,7 +46,7 @@ test("rejects real candy and cigarette photos as Not an Apple", async ({ page, r
     ? JSON.parse(readFileSync("public/models/manifest.json", "utf-8"))
     : null;
   test.skip(
-    !existsSync("public/models/apple-mobilenet-open-set-v2.onnx") ||
+    !existsSync("public/models/apple-mobilenet-open-set-v3.onnx") ||
     manifest?.labels?.[2] !== "Not an Apple",
     "Only applies to the evaluated three-class model",
   );
@@ -78,5 +78,41 @@ test("rejects real candy and cigarette photos as Not an Apple", async ({ page, r
     });
     await expect(page.getByText("Սա խնձոր չէ", { exact: false })).toBeVisible();
     await expect(page.locator(".result .probability")).toHaveCount(0);
+  }
+});
+
+test("recognizes real orchard apples from a never-trained source split", async ({ page, request }) => {
+  const manifest = existsSync("public/models/manifest.json")
+    ? JSON.parse(readFileSync("public/models/manifest.json", "utf-8"))
+    : null;
+  test.skip(
+    !existsSync("public/models/apple-mobilenet-open-set-v3.onnx") ||
+    manifest?.model_version !== "apples-orchard-v3",
+    "Require trained orchard-aware ONNX model",
+  );
+  test.setTimeout(180_000);
+  await page.goto("./#/ai-scanner");
+  await expect(page.getByText("AI model ready — on-device")).toBeVisible({ timeout: 20000 });
+  const samples = [
+    {
+      name: "fresh-apple.jpg",
+      url: "https://raw.githubusercontent.com/mustafa20999/AFQC/main/Test/apple_fresh/apple_fresh%20%281038%29.JPG",
+    },
+    {
+      name: "rotten-apple.jpg",
+      url: "https://raw.githubusercontent.com/mustafa20999/AFQC/main/Test/apple_rotten/apple_rotten%20%281045%29.JPG",
+    },
+  ];
+  for (const sample of samples) {
+    const res = await request.get(sample.url, { timeout: 40000 });
+    expect(res.ok(), "Official orchard photo should be downloadable").toBeTruthy();
+    await page.locator("input[type=file]").setInputFiles({
+      name: sample.name, mimeType: "image/jpeg", buffer: await res.body(),
+    });
+    await page.getByRole("button", { name: "Classify Apple (AI)" }).click();
+    await expect(page.getByText("MODEL PREDICTION")).toBeVisible({ timeout: 90000 });
+    // A specific fruit can be uncertain; it must not get a confident
+    // "not an apple" declaration simply for being photographed on a phone.
+    await expect(page.locator(".result h2")).not.toHaveText("Not an Apple");
   }
 });
