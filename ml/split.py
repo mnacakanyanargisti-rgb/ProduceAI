@@ -40,12 +40,29 @@ def main():
         raise ValueError(
             "Provide at least ten unique images per class under fresh/, rotten/, and not_apple/."
         )
+    # Stratify *within each negative-source group*, not merely "not_apple".
+    # Otherwise rare source groups such as cake can have <3 held-out items,
+    # and per-group rejection statistics cannot be trusted or even computed.
+    df["stratum"] = df["source_group"]
+    counts = df.groupby("stratum").size()
+    if counts.min() < 25:
+        raise ValueError(
+            "Need at least 25 unique images per source group for audited test sets: "
+            + counts.to_json()
+        )
     train, rest = train_test_split(
-        df, test_size=0.30, random_state=a.seed, stratify=df.label
+        df, test_size=0.30, random_state=a.seed, stratify=df.stratum
     )
     val, test = train_test_split(
-        rest, test_size=0.5, random_state=a.seed, stratify=rest.label
+        rest, test_size=0.5, random_state=a.seed, stratify=rest.stratum
     )
+    for subset, name in ((train, "train"), (val, "val"), (test, "test")):
+        small = subset.groupby("stratum").size()
+        if small.min() < 3:
+            raise ValueError(f"Insufficient {name} samples in source group: {small.to_json()}")
+    train = train.drop(columns=["stratum"])
+    val = val.drop(columns=["stratum"])
+    test = test.drop(columns=["stratum"])
     result = pd.concat(
         [
             train.assign(split="train"),
