@@ -8,20 +8,27 @@ import torch
 from ml.models import LABELS, build_model, transform, features
 
 
-# Conservative open-set gate: a fresh/rotten probability is *not* enough
-# until the model also has little evidence for the "not an apple" class.
-MIN_APPLE_CONFIDENCE = 0.80
-MAX_NONAPPLE_PROBABILITY = 0.15
+# These are abstention decisions, not guarantees that every novel object is known.
+# Do not tell the user a real apple is "not an apple" merely because the model
+# falls short of 80% confidence. On ambiguous pictures request a new photograph.
+NOT_APPLE_MIN_PROBABILITY = 0.65
+APPLE_MAX_NONAPPLE_PROBABILITY = 0.50
+MIN_APPLE_CLASS_PROBABILITY = 0.45
+UNCERTAIN_LABEL = "Unable to Verify"
 
 
 def classify_probabilities(probabilities):
     if len(probabilities) != len(LABELS) or not np.isfinite(probabilities).all():
         raise ValueError("Invalid model output")
     best_apple = int(np.argmax(probabilities[:2]))
-    if (probabilities[best_apple] < MIN_APPLE_CONFIDENCE or
-            probabilities[2] > MAX_NONAPPLE_PROBABILITY):
+    best_apple_probability = float(probabilities[best_apple])
+    nonapple = float(probabilities[2])
+    if nonapple >= NOT_APPLE_MIN_PROBABILITY and nonapple > best_apple_probability:
         return LABELS[2]
-    return LABELS[best_apple]
+    if (best_apple_probability >= MIN_APPLE_CLASS_PROBABILITY and
+            nonapple <= APPLE_MAX_NONAPPLE_PROBABILITY):
+        return LABELS[best_apple]
+    return UNCERTAIN_LABEL
 
 
 class Predictor:
