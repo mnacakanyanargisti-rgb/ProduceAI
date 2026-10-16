@@ -63,7 +63,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f frontend/public/models/apple-mobilenet.onnx
-          git add frontend/public/models/manifest.json frontend/public/experiments/results.json
+          git add -f frontend/public/models/manifest.json
+          git add frontend/public/experiments/results.json
           if git diff --cached --quiet; then
             echo "Model already up to date."
             exit 0
