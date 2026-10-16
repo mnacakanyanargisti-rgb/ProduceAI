@@ -19,7 +19,7 @@ def main():
     a = p.parse_args()
     rows = []
     seen = set()
-    for label, folder in enumerate(["fresh", "rotten"]):
+    for label, folder in enumerate(["fresh", "rotten", "not_apple"]):
         for path in sorted((a.data / folder).rglob("*")):
             if path.suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp"}:
                 continue
@@ -32,12 +32,13 @@ def main():
             with Image.open(path) as image:
                 image.verify()
             rows.append(
-                {"path": path.resolve().as_posix(), "label": label, "sha256": digest}
+                {"path": path.resolve().as_posix(), "label": label, "sha256": digest,
+                 "source_group": path.name.split("__", 1)[0] if label == 2 else folder}
             )
     df = pd.DataFrame(rows)
-    if df.empty or set(df.label) != {0, 1} or df.groupby("label").size().min() < 10:
+    if df.empty or set(df.label) != {0, 1, 2} or df.groupby("label").size().min() < 10:
         raise ValueError(
-            "Provide at least ten unique images per class under fresh/ and rotten/."
+            "Provide at least ten unique images per class under fresh/, rotten/, and not_apple/."
         )
     train, rest = train_test_split(
         df, test_size=0.30, random_state=a.seed, stratify=df.label
@@ -58,7 +59,7 @@ def main():
         "source": a.source,
         "license": a.license,
         "seed": a.seed,
-        "labels": ["Fresh Apple", "Rotten or Defective Apple"],
+        "labels": ["Fresh Apple", "Rotten or Defective Apple", "Not an Apple"],
         "counts": result.groupby(["split", "label"])
         .size()
         .reset_index(name="count")
