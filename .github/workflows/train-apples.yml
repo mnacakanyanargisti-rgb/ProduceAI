@@ -31,7 +31,8 @@ jobs:
       - name: Import fresh and rotten apple images
         run: python -m ml.fetch_apples --output data/apples
       - name: Freeze stratified manifest
-        run: python -m ml.split --data data/apples --source "https://huggingface.co/datasets/menasi11/fruit-classification" --license "Unverified: research-only pending license confirmation"
+        run: |
+          python -m ml.split --data data/apples --source "https://huggingface.co/datasets/menasi11/fruit-classification" --license "Unverified - research only pending license confirmation"
       - name: Train MobileNetV2
         run: python -m ml.train --manifest data/manifest.csv --model mobilenet --epochs ${{ inputs.epochs }} --batch-size 16 --version hf-apples-v1 --output models
       - name: Evaluate on untouched split
