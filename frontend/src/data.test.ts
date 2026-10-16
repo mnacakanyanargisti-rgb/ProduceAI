@@ -18,8 +18,9 @@ describe("API contract", () => {
         model_name: "cnn",
         model_version: "1",
         inference_ms: 12,
-        probabilities: { "Fresh Apple": 0.8, "Rotten or Defective Apple": 0.2 },
+        probabilities: { "Fresh Apple": 0.8, "Rotten or Defective Apple": 0.18, "Not an Apple": 0.02 },
       }),
     ).not.toThrow();
+    expect(() => parsePrediction({ label: "Not an Apple", model_name: "mobilenet", model_version: "v2", inference_ms: 7, probabilities: { "Fresh Apple": 0.06, "Rotten or Defective Apple": 0.04, "Not an Apple": 0.90 } })).not.toThrow();
   });
 });
