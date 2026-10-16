@@ -7,12 +7,17 @@ on:
       - 'ml/split.py'
       - 'docs/TRAIN_REAL_MODEL.md'
       - 'ml/fetch_github_apples.py'
+      - 'ml/fetch_non_apples.py'
+      - 'ml/models.py'
+      - 'ml/inference.py'
+      - 'ml/train.py'
+      - 'ml/evaluate.py'
   workflow_dispatch:
     inputs:
       epochs:
         description: "Number of MobileNetV2 epochs"
         required: true
-        default: "8"
+        default: "12"
         type: choice
         options: ["4", "8", "12"]
 jobs:
@@ -34,13 +39,15 @@ jobs:
           pip install "datasets>=3,<5"
       - name: Import fresh and rotten apple images
         run: python -m ml.fetch_github_apples --output data/apples --per-class 180
+      - name: Download cigarette, candy, grocery and fruit hard negatives
+        run: python -m ml.fetch_non_apples --output data/apples --workers 10
       - name: Freeze stratified manifest
         run: |
-          python -m ml.split --data data/apples --source "https://github.com/Bangkit-JKT2-D/fruits-fresh-rotten-classification" --license "Unverified - research only pending license confirmation"
+          python -m ml.split --data data/apples --source "Bangkit-JKT2-D/fruits-fresh-rotten-classification; LoaferCH/dataset_classification_cigarettes; PerceptiLabs/Recognizing-Groceries" --license "Unverified - research only pending license confirmation"
       - name: Train MobileNetV2
-        run: python -m ml.train --manifest data/manifest.csv --model mobilenet --epochs "${EPOCHS}" --batch-size 16 --version hf-apples-v1 --output models
+        run: python -m ml.train --manifest data/manifest.csv --model mobilenet --epochs "${EPOCHS}" --batch-size 16 --version apples-open-set-v2 --output models
         env:
-          EPOCHS: ${{ inputs.epochs || '8' }}
+          EPOCHS: ${{ inputs.epochs || '12' }}
       - name: Evaluate on untouched split
         run: python -m ml.evaluate --manifest data/manifest.csv --checkpoint models/mobilenet.pt --output experiments/results.json
       - name: Upload checkpoint and metrics (private workflow artifact)
