@@ -31,6 +31,7 @@ import {
   type Prediction,
 } from "./data";
 import "./style.css";
+import { inspectImage, type VisualSummary } from "./visual-analysis";
 
 const UsageChart = lazy(() =>
   import("./charts").then((m) => ({ default: m.UsageChart })),
@@ -456,7 +457,8 @@ function Scanner({
     [busy, setBusy] = useState(false),
     [result, setResult] = useState<Prediction | null>(null),
     [drag, setDrag] = useState(false),
-    [storageWarning, setStorageWarning] = useState("");
+    [storageWarning, setStorageWarning] = useState(""),
+    [visual, setVisual] = useState<VisualSummary | null>(null);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!file) {
@@ -471,6 +473,7 @@ function Scanner({
     if (busy || !f) return;
     setError("");
     setResult(null);
+    setVisual(null);
     setStorageWarning("");
     const e = validateFile(f);
     if (e) {
@@ -483,9 +486,17 @@ function Scanner({
   async function analyze() {
     if (!file) return;
     if (!API) {
-      setError(
-        "Apple analysis is not available yet. This research demo needs a deployed API and a trained apple classification model. The uploaded photo has not been analyzed.",
-      );
+      setBusy(true);
+      setError("");
+      setResult(null);
+      setVisual(null);
+      try {
+        setVisual(await inspectImage(file));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Could not read the image.");
+      } finally {
+        setBusy(false);
+      }
       return;
     }
     setBusy(true);
@@ -613,7 +624,7 @@ function Scanner({
             onClick={analyze}
           >
             <ScanLine size={19} />
-            {busy ? "Analyzing…" : "Analyze Apple"}
+            {busy ? "Analyzing…" : API ? "Analyze Apple" : "Inspect Image (Preview)"}
             <ArrowRight size={17} />
           </button>
           {error && (
@@ -627,7 +638,26 @@ function Scanner({
             <h2>Classification results</h2>
             <span className="tag">02 / OUTPUT</span>
           </div>
-          {result ? (
+          {visual ? (
+            <div aria-live="polite" className="result">
+              <span className="tag">BROWSER IMAGE STATISTICS · EXPERIMENTAL</span>
+              <h3>Image measurements complete</h3>
+              <dl>
+                <dt>Resolution</dt><dd>{visual.width} × {visual.height} px</dd>
+                <dt>Mean brightness</dt><dd>{visual.meanBrightness.toFixed(1)}%</dd>
+                <dt>Mean saturation</dt><dd>{visual.meanSaturation.toFixed(1)}%</dd>
+                <dt>Dark pixels</dt><dd>{visual.darkPixelPercent.toFixed(1)}%</dd>
+                <dt>Pixels sampled</dt><dd>{visual.sampledPixels.toLocaleString()}</dd>
+              </dl>
+              <p className="muted">
+                These are actual measurements of the entire uploaded photograph,
+                including its background. Dark pixels are NOT necessarily apple
+                defects. No AI model was run, and no freshness, grade, price, or
+                food-safety conclusion can be drawn from these measurements.
+                A trained model and segmented apple region are needed for that.
+              </p>
+            </div>
+          ) : result ? (
             <div aria-live="polite" className="result">
               <span className="icon-box">
                 <Check />
