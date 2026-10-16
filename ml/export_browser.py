@@ -38,15 +38,21 @@ def main():
     rejection = metrics.get("negative_group_rejection", {})
     for group in ("cigarette", "candy"):
         result = rejection.get(group, {})
-        if result.get("samples", 0) < 3 or result.get("rejection_rate", 0) < 0.75:
+        if result.get("samples", 0) < 3 or result.get("rejection_rate", 0) < 0.85:
             raise ValueError(f"Unsafe to publish: poor held-out {group} rejection {result}")
     if metrics.get("apple_acceptance", 0) < 0.75:
         raise ValueError("Unsafe to publish: excessive rejection of real apples")
+    orchard = metrics.get("external_orchard", {})
+    if orchard.get("overall", {}).get("apple_acceptance", 0) < 0.87:
+        raise ValueError("Cannot publish: insufficient independent real-orchard apple acceptance")
+    for category in ("fresh", "rotten"):
+        if orchard.get(category, {}).get("apple_acceptance", 0) < 0.80:
+            raise ValueError(f"Cannot publish: rejects too many real orchard {category} apples")
     model = build_model("mobilenet", pretrained=False)
     model.load_state_dict(data["state_dict"])
     model.eval()
     a.output_dir.mkdir(parents=True, exist_ok=True)
-    destination = a.output_dir / "apple-mobilenet-open-set-v2.onnx"
+    destination = a.output_dir / "apple-mobilenet-open-set-v3.onnx"
     torch.manual_seed(123)
     sample = torch.randn(1, 3, 224, 224)
     torch.onnx.export(
@@ -76,9 +82,12 @@ def main():
         "f1": float(metrics["f1"]),
         "test_samples": int(metrics["test_samples"]),
         "negative_group_rejection": rejection,
+        "external_orchard": orchard,
         "apple_acceptance": float(metrics["apple_acceptance"]),
-        "min_apple_confidence": 0.80,
-        "max_nonapple_probability": 0.15,
+        "not_apple_min_probability": 0.65,
+        "apple_max_nonapple_probability": 0.50,
+        "min_apple_class_probability": 0.45,
+        "uncertain_label": "Unable to Verify",
         "dataset": str(metrics["dataset"]),
         "limitations": "Three-class fresh/rotten/not-apple research classifier. Open-set recognition cannot guarantee rejection of every non-apple object; not food safety or commercial grading.",
     }
