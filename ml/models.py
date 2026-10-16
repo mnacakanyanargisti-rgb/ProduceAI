@@ -12,7 +12,11 @@ NORMALIZE = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 def transform(training=False):
     steps = [transforms.Resize((224, 224))]
     if training:
-        steps += [transforms.RandomHorizontalFlip(), transforms.RandomRotation(10)]
+        steps += [
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomAffine(degrees=15, translate=(0.08, 0.08), scale=(0.88, 1.08)),
+            transforms.ColorJitter(brightness=0.30, contrast=0.27, saturation=0.22, hue=0.04),
+        ]
     return transforms.Compose(steps + [transforms.ToTensor(), NORMALIZE])
 
 
@@ -38,6 +42,9 @@ def build_model(name, pretrained=False):
         )
         for p in model.features.parameters():
             p.requires_grad = False
+        # Adapt the final visual blocks to independent real orchard photography.
+        for p in model.features[-2:].parameters():
+            p.requires_grad = True
         model.classifier[1] = nn.Linear(model.last_channel, len(LABELS))
         return model
     raise ValueError("Unknown architecture")
