@@ -484,7 +484,7 @@ function Scanner({
     if (!file) return;
     if (!API) {
       setError(
-        "Set VITE_API_URL in frontend/.env.local and restart the frontend. See docs/DEPLOYMENT.md.",
+        "Apple analysis is not available yet. This research demo needs a deployed API and a trained apple classification model. The uploaded photo has not been analyzed.",
       );
       return;
     }
