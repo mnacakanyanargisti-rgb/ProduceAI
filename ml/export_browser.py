@@ -35,6 +35,13 @@ def main():
     metrics = experiments[0]
     if metrics.get("test_samples", 0) < 10:
         raise ValueError("At least 10 held-out samples required for public release.")
+    rejection = metrics.get("negative_group_rejection", {})
+    for group in ("cigarette", "candy"):
+        result = rejection.get(group, {})
+        if result.get("samples", 0) < 3 or result.get("rejection_rate", 0) < 0.75:
+            raise ValueError(f"Unsafe to publish: poor held-out {group} rejection {result}")
+    if metrics.get("apple_acceptance", 0) < 0.75:
+        raise ValueError("Unsafe to publish: excessive rejection of real apples")
     model = build_model("mobilenet", pretrained=False)
     model.load_state_dict(data["state_dict"])
     model.eval()
@@ -68,8 +75,12 @@ def main():
         "accuracy": float(metrics["accuracy"]),
         "f1": float(metrics["f1"]),
         "test_samples": int(metrics["test_samples"]),
+        "negative_group_rejection": rejection,
+        "apple_acceptance": float(metrics["apple_acceptance"]),
+        "min_apple_confidence": 0.80,
+        "max_nonapple_probability": 0.15,
         "dataset": str(metrics["dataset"]),
-        "limitations": "Binary fresh-vs-rotten research classifier, not commercial grading or food safety. Collected images might not generalize to real orchards.",
+        "limitations": "Three-class fresh/rotten/not-apple research classifier. Open-set recognition cannot guarantee rejection of every non-apple object; not food safety or commercial grading.",
     }
     import hashlib
     meta["model_sha256"] = hashlib.sha256(destination.read_bytes()).hexdigest()
