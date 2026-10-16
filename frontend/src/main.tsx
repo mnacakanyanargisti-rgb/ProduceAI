@@ -564,7 +564,7 @@ function Scanner({
       <PageHeading
         label="THE AI WORKSPACE"
         title="A closer look, powered by vision."
-        description="Upload one apple image. A published trained model can classify it as fresh or rotten directly on your device."
+        description="Upload a photo. The AI first verifies that the object looks like an apple, then classifies supported apples as fresh or defective."
       />
       <div className="status-banner">
         <span className={connected || browserModel ? "live-dot" : "offline-dot"} />
@@ -690,7 +690,15 @@ function Scanner({
               </span>
               <p>MODEL PREDICTION</p>
               <h2>{result.label}</h2>
-              {Object.entries(result.probabilities).map(([label, p]) => (
+              {result.label === "Not an Apple" && (
+                <p className="error" role="status" style={{ marginBottom: 14 }}>
+                  Սա խնձոր չէ — Not an Apple. Upload one real apple against a
+                  clear background. No fresh/rotten grade has been assigned.
+                </p>
+              )}
+              {Object.entries(result.probabilities)
+                .filter(([label]) => result.label !== "Not an Apple" || label === "Not an Apple")
+                .map(([label, p]) => (
                 <div className="probability" key={label}>
                   <div>
                     <span>{label}</span>
@@ -708,9 +716,9 @@ function Scanner({
                 <dd>{result.inference_ms.toFixed(1)} ms</dd>
               </dl>
               <p className="muted">
-                Prediction from an apple-specific trained model. Probabilities reflect
-                model confidence, not food safety or a formal commercial grade.
-                Check the actual fruit before making decisions.
+                {result.label === "Not an Apple"
+                  ? "Apple verification failed or the model was uncertain. No apple quality assessment was made. Try a well-lit photo of one apple."
+                  : "Fresh/defective classification is made only after apple verification. Probabilities reflect model confidence, not food safety or a commercial grade."}
               </p>
               {storageWarning && (
                 <p role="alert" className="error">
@@ -797,7 +805,7 @@ function Comparison() {
                 [
                   "OpenCV color histograms and texture features with an SVM.",
                   "A compact convolutional network trained from scratch.",
-                  "ImageNet-pretrained visual features adapted to two apple classes.",
+                  "ImageNet-pretrained features adapted to fresh apple, defective apple, and non-apple classes.",
                 ][i]
               }
             </p>
@@ -859,7 +867,7 @@ function Comparison() {
             <div className="scanner-grid" key={e.name}>
               <section className="panel">
                 <h3>{e.name} · Confusion matrix</h3>
-                <p>Rows: actual · Columns: predicted · Fresh, Defective</p>
+                <p>Rows: actual · Columns: predicted · Fresh, Defective, Not an Apple</p>
                 <table>
                   <tbody>
                     {e.confusion_matrix.map((row, i) => (
@@ -903,9 +911,12 @@ function Analytics({
   clear: () => void;
 }) {
   const fresh = history.filter((p) => p.label === "Fresh Apple").length;
+  const defective = history.filter((p) => p.label === "Rotten or Defective Apple").length;
+  const notApple = history.filter((p) => p.label === "Not an Apple").length;
   const counts = [
     { name: "Fresh", count: fresh },
-    { name: "Defective", count: history.length - fresh },
+    { name: "Defective", count: defective },
+    { name: "Not an Apple", count: notApple },
   ];
   const models = Object.entries(
     history.reduce<Record<string, number>>((acc, p) => {
@@ -936,7 +947,8 @@ function Analytics({
           [
             ["Images analyzed", history.length, ScanLine],
             ["Fresh apples", fresh, Apple],
-            ["Defective apples", history.length - fresh, Leaf],
+            ["Defective apples", defective, Leaf],
+            ["Not apples", notApple, X],
             [
               "Average inference",
               history.length
@@ -1022,12 +1034,12 @@ const methodology = [
   [
     "01",
     "The research question",
-    "Can visual features distinguish fresh from visibly rotten or defective apples? This initial binary classification study explores a potential aid for produce sorting, not a food-safety certification.",
+    "Can visual features identify an apple before judging visible freshness? The three-class research model recognizes fresh apples, defective apples, or non-apple objects. It is not a food-safety certification.",
   ],
   [
     "02",
     "Dataset selection & EDA",
-    "The initial dataset is expected to contain fresh and rotten apple images. No dataset is bundled or downloaded automatically. Record its source, license, collection conditions, class balance, duplicate analysis, and cultivar coverage before use. Inspect lighting, background shortcuts, and label consistency.",
+    "Training uses fresh and rotten apples plus non-apples from verified public repository folders (cigarettes, candies, grocery packages, bananas, oranges). Licenses require independent review for commercial use. Inspect lighting, capture sessions, class balance and label consistency.",
   ],
   [
     "03",
@@ -1052,12 +1064,12 @@ const methodology = [
   [
     "07",
     "Limitations that matter",
-    "A binary model may misclassify other fruit or non-fruit images, unseen varieties, hidden internal damage, unusual lighting, and subtle disease. Softmax probabilities are not calibrated guarantees. Classification does not localize defects or quantify commercial grade.",
+    "The model adds non-apple rejection but cannot guarantee recognizing every unfamiliar object. Unseen cultivars, unusual lighting, and deceptive backgrounds remain risks. Uncertain predictions are rejected; softmax probabilities are not guarantees. Defect locations and formal grades are not provided.",
   ],
   [
     "08",
     "The next research chapter",
-    "Audit dataset bias, add an out-of-distribution rejection method, calibrate uncertainty, test on local orchards, study illumination robustness, and collect expert annotations for localization and a separately validated grading method.",
+    "Measure rejection of new candies, cigarettes and unseen objects from independent sources; audit near-duplicates and orchard images; calibrate uncertainty and collect expert annotations for defect localization.",
   ],
 ];
 function Research() {
@@ -1164,7 +1176,7 @@ function About() {
           <p>
             Built for university presentations, reproducible experiments, and
             continued exploration. An evaluated MobileNetV2 model is provided for
-            on-device fresh-versus-rotten apple classification. Commercial
+            on-device apple verification and fresh-versus-rotten classification. Commercial
             quality grades and defect localization still require separate
             labeled training data and independent evaluation.
           </p>
