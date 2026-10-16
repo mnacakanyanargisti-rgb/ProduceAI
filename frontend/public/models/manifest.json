@@ -1,23 +1,23 @@
 {
   "model_name": "MobileNetV2",
-  "model_version": "apples-open-set-v2",
+  "model_version": "apples-orchard-v3",
   "labels": [
     "Fresh Apple",
     "Rotten or Defective Apple",
     "Not an Apple"
   ],
   "input_size": 224,
-  "onnx_file": "apple-mobilenet-open-set-v2.onnx",
-  "accuracy": 0.9487179487179487,
-  "f1": 0.9409180692350448,
-  "test_samples": 117,
+  "onnx_file": "apple-mobilenet-open-set-v3.onnx",
+  "accuracy": 0.9504504504504504,
+  "f1": 0.955616794798984,
+  "test_samples": 222,
   "negative_group_rejection": {
     "banana": {
       "samples": 9,
       "rejection_rate": 1.0
     },
     "cake": {
-      "samples": 5,
+      "samples": 4,
       "rejection_rate": 1.0
     },
     "candy": {
@@ -30,7 +30,7 @@
     },
     "cigarette": {
       "samples": 14,
-      "rejection_rate": 1.0
+      "rejection_rate": 0.9285714285714286
     },
     "cigarette_other": {
       "samples": 5,
@@ -45,10 +45,34 @@
       "rejection_rate": 1.0
     }
   },
-  "apple_acceptance": 0.9074074074074074,
-  "min_apple_confidence": 0.8,
-  "max_nonapple_probability": 0.15,
-  "dataset": "Bangkit-JKT2-D/fruits-fresh-rotten-classification; LoaferCH/dataset_classification_cigarettes; PerceptiLabs/Recognizing-Groceries",
+  "external_orchard": {
+    "fresh": {
+      "samples": 90,
+      "apple_acceptance": 1.0,
+      "correct_quality_classification": 0.9,
+      "uncertain_count": 0,
+      "false_not_apple_count": 0
+    },
+    "rotten": {
+      "samples": 90,
+      "apple_acceptance": 1.0,
+      "correct_quality_classification": 0.9444444444444444,
+      "uncertain_count": 0,
+      "false_not_apple_count": 0
+    },
+    "overall": {
+      "samples": 180,
+      "apple_acceptance": 1.0,
+      "correct_quality_classification": 0.9222222222222223,
+      "source": "https://github.com/mustafa20999/AFQC (official upstream Test partition)"
+    }
+  },
+  "apple_acceptance": 1.0,
+  "not_apple_min_probability": 0.65,
+  "apple_max_nonapple_probability": 0.5,
+  "min_apple_class_probability": 0.45,
+  "uncertain_label": "Unable to Verify",
+  "dataset": "Bangkit-JKT2-D/fruits-fresh-rotten-classification; mustafa20999/AFQC academic-only; LoaferCH/dataset_classification_cigarettes; PerceptiLabs/Recognizing-Groceries",
   "limitations": "Three-class fresh/rotten/not-apple research classifier. Open-set recognition cannot guarantee rejection of every non-apple object; not food safety or commercial grading.",
-  "model_sha256": "2962d2dfec8520593f45cc821d47a9940bd184e3d26d4280268bccce1581ada8"
+  "model_sha256": "cb6db39fb99fe91a68ebd3c5e57e42342b5ab7e6db2588d2aaee81caeaca3de7"
 }

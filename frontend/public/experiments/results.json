@@ -3,70 +3,70 @@
   "experiments": [
     {
       "name": "mobilenet",
-      "version": "apples-open-set-v2",
+      "version": "apples-orchard-v3",
       "seed": 42,
-      "dataset": "Bangkit-JKT2-D/fruits-fresh-rotten-classification; LoaferCH/dataset_classification_cigarettes; PerceptiLabs/Recognizing-Groceries",
-      "manifest_sha256": "35f391911eded6b8757146ebd99251de689113067d3af7ce86bddfd1f8aad766",
+      "dataset": "Bangkit-JKT2-D/fruits-fresh-rotten-classification; mustafa20999/AFQC academic-only; LoaferCH/dataset_classification_cigarettes; PerceptiLabs/Recognizing-Groceries",
+      "manifest_sha256": "137dd82f7590bcc3320a77cf126aa5aff1f40c4d438ca246ae0b659d9ea16970",
       "history": [
         {
           "epoch": 1,
-          "train_loss": 0.6129238365334032,
-          "val_loss": 0.38298685759560674
+          "train_loss": 0.6232099422616848,
+          "val_loss": 0.29829594291545247
         },
         {
           "epoch": 2,
-          "train_loss": 0.27273442271428233,
-          "val_loss": 0.2593901554743449
+          "train_loss": 0.22973712110841596,
+          "val_loss": 0.2000120041875152
         },
         {
           "epoch": 3,
-          "train_loss": 0.1870035788133031,
-          "val_loss": 0.20398326421904767
+          "train_loss": 0.17128408093249936,
+          "val_loss": 0.17722508311271667
         },
         {
           "epoch": 4,
-          "train_loss": 0.14310429395336807,
-          "val_loss": 0.17169085055844396
+          "train_loss": 0.14096625137743343,
+          "val_loss": 0.13094072446629806
         },
         {
           "epoch": 5,
-          "train_loss": 0.11964356637263036,
-          "val_loss": 0.15128914578857586
+          "train_loss": 0.11638291663414724,
+          "val_loss": 0.11389722587826016
         },
         {
           "epoch": 6,
-          "train_loss": 0.10345011310917991,
-          "val_loss": 0.13716117795715985
+          "train_loss": 0.10333744756712014,
+          "val_loss": 0.10454907261573516
         },
         {
           "epoch": 7,
-          "train_loss": 0.09259269918714251,
-          "val_loss": 0.12692075464715305
+          "train_loss": 0.10619467480331084,
+          "val_loss": 0.17296477393792556
         },
         {
           "epoch": 8,
-          "train_loss": 0.08101475200591943,
-          "val_loss": 0.11835260154345097
+          "train_loss": 0.0755847860631105,
+          "val_loss": 0.15903070068976902
         },
         {
           "epoch": 9,
-          "train_loss": 0.07509823213075544,
-          "val_loss": 0.11191708250687672
+          "train_loss": 0.08192593703571434,
+          "val_loss": 0.11622364161250827
         },
         {
           "epoch": 10,
-          "train_loss": 0.06919389411861643,
-          "val_loss": 0.10659371367377093
+          "train_loss": 0.08647087225726442,
+          "val_loss": 0.08352673788731163
         },
         {
           "epoch": 11,
-          "train_loss": 0.062159718184871766,
-          "val_loss": 0.10210158886053623
+          "train_loss": 0.11414268182799163,
+          "val_loss": 0.09535274151209239
         },
         {
           "epoch": 12,
-          "train_loss": 0.053318120810397704,
-          "val_loss": 0.09772157949260157
+          "train_loss": 0.07910813016522115,
+          "val_loss": 0.0944210900044119
         }
       ],
       "environment": {
@@ -87,7 +87,7 @@
           "rejection_rate": 1.0
         },
         "cake": {
-          "samples": 5,
+          "samples": 4,
           "rejection_rate": 1.0
         },
         "candy": {
@@ -100,7 +100,7 @@
         },
         "cigarette": {
           "samples": 14,
-          "rejection_rate": 1.0
+          "rejection_rate": 0.9285714285714286
         },
         "cigarette_other": {
           "samples": 5,
@@ -115,31 +115,63 @@
           "rejection_rate": 1.0
         }
       },
-      "apple_acceptance": 0.9074074074074074,
-      "accuracy": 0.9487179487179487,
-      "precision": 0.9631445170660857,
-      "recall": 0.9259259259259259,
-      "f1": 0.9409180692350448,
+      "apple_acceptance": 1.0,
+      "uncertain_count": 1,
+      "accuracy": 0.9504504504504504,
+      "precision": 0.9585157390035439,
+      "recall": 0.9529569892473119,
+      "f1": 0.955616794798984,
       "confusion_matrix": [
         [
-          26,
+          76,
+          4,
           0,
+          0
+        ],
+        [
+          6,
+          74,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          61,
           1
         ],
         [
-          1,
-          22,
-          4
-        ],
-        [
           0,
           0,
-          63
+          0,
+          0
         ]
       ],
-      "test_samples": 117,
-      "inference_ms": 14.203735777776247,
-      "latency_method": "CPU; preprocessing + prediction; warmup excluded"
+      "test_samples": 222,
+      "inference_ms": 18.3557131261271,
+      "latency_method": "CPU; preprocessing + prediction; warmup excluded",
+      "external_orchard": {
+        "fresh": {
+          "samples": 90,
+          "apple_acceptance": 1.0,
+          "correct_quality_classification": 0.9,
+          "uncertain_count": 0,
+          "false_not_apple_count": 0
+        },
+        "rotten": {
+          "samples": 90,
+          "apple_acceptance": 1.0,
+          "correct_quality_classification": 0.9444444444444444,
+          "uncertain_count": 0,
+          "false_not_apple_count": 0
+        },
+        "overall": {
+          "samples": 180,
+          "apple_acceptance": 1.0,
+          "correct_quality_classification": 0.9222222222222223,
+          "source": "https://github.com/mustafa20999/AFQC (official upstream Test partition)"
+        }
+      }
     }
   ]
 }
