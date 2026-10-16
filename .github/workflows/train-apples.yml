@@ -32,7 +32,7 @@ jobs:
       - name: Train MobileNetV2
         run: python -m ml.train --manifest data/manifest.csv --model mobilenet --epochs ${{ inputs.epochs }} --batch-size 16 --version hf-apples-v1 --output models
       - name: Evaluate on untouched split
-        run: python -m ml.evaluate --manifest data/manifest.csv --model-path models/mobilenet.pt --output experiments
+        run: python -m ml.evaluate --manifest data/manifest.csv --checkpoint models/mobilenet.pt --output experiments/results.json
       - name: Upload checkpoint and metrics (private workflow artifact)
         uses: actions/upload-artifact@v4
         with:
