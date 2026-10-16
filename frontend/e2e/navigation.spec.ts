@@ -33,7 +33,7 @@ test("scanner never fabricates a prediction when disconnected", async ({
     page.getByText("Model Not Connected", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Analyze Apple" }),
+    page.getByRole("button", { name: "Inspect Image (Preview)" }),
   ).toBeDisabled();
   await expect(
     page.getByText("Every result starts with an image"),
@@ -47,6 +47,6 @@ test("scanner never fabricates a prediction when disconnected", async ({
     });
   await expect(page.getByRole("alert")).toContainText("JPEG, PNG, or WebP");
   await expect(
-    page.getByRole("button", { name: "Analyze Apple" }),
+    page.getByRole("button", { name: "Inspect Image (Preview)" }),
   ).toBeDisabled();
 });
