@@ -8,6 +8,8 @@ on:
       - 'docs/TRAIN_REAL_MODEL.md'
       - 'ml/fetch_github_apples.py'
       - 'ml/fetch_non_apples.py'
+      - 'ml/fetch_orchard_apples.py'
+      - 'ml/evaluate_orchard.py'
       - 'ml/models.py'
       - 'ml/inference.py'
       - 'ml/train.py'
@@ -20,6 +22,9 @@ on:
         default: "12"
         type: choice
         options: ["4", "8", "12"]
+concurrency:
+  group: apple-orchard-training-main
+  cancel-in-progress: true
 jobs:
   train:
     runs-on: ubuntu-latest
@@ -41,15 +46,19 @@ jobs:
         run: python -m ml.fetch_github_apples --output data/apples --per-class 180
       - name: Download cigarette, candy, grocery and fruit hard negatives
         run: python -m ml.fetch_non_apples --output data/apples --workers 10
+      - name: Import orchard apples and isolated independent orchard test
+        run: python -m ml.fetch_orchard_apples --output data/apples --external-test data/orchard_test --train-per-class 350 --test-per-class 90 --workers 12
       - name: Freeze stratified manifest
         run: |
-          python -m ml.split --data data/apples --source "Bangkit-JKT2-D/fruits-fresh-rotten-classification; LoaferCH/dataset_classification_cigarettes; PerceptiLabs/Recognizing-Groceries" --license "Unverified - research only pending license confirmation"
+          python -m ml.split --data data/apples --source "Bangkit-JKT2-D/fruits-fresh-rotten-classification; mustafa20999/AFQC academic-only; LoaferCH/dataset_classification_cigarettes; PerceptiLabs/Recognizing-Groceries" --license "Unverified - research only pending license confirmation"
       - name: Train MobileNetV2
-        run: python -m ml.train --manifest data/manifest.csv --model mobilenet --epochs "${EPOCHS}" --batch-size 16 --version apples-open-set-v2 --output models
+        run: python -m ml.train --manifest data/manifest.csv --model mobilenet --epochs "${EPOCHS}" --batch-size 16 --version apples-orchard-v3 --output models
         env:
           EPOCHS: ${{ inputs.epochs || '12' }}
       - name: Evaluate on untouched split
         run: python -m ml.evaluate --manifest data/manifest.csv --checkpoint models/mobilenet.pt --output experiments/results.json
+      - name: Evaluate independently photographed orchard apples
+        run: python -m ml.evaluate_orchard --data data/orchard_test --manifest data/manifest.csv --checkpoint models/mobilenet.pt --metrics experiments/results.json
       - name: Upload checkpoint and metrics (private workflow artifact)
         uses: actions/upload-artifact@v4
         with:
