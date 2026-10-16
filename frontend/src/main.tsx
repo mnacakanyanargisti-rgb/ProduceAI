@@ -32,6 +32,7 @@ import {
 } from "./data";
 import "./style.css";
 import { inspectImage, type VisualSummary } from "./visual-analysis";
+import { classifyAppleInBrowser, getBrowserModelMetadata, type BrowserModelMetadata } from "./browser-model";
 
 const UsageChart = lazy(() =>
   import("./charts").then((m) => ({ default: m.UsageChart })),
@@ -106,7 +107,8 @@ function App() {
   const [page, setPage] = useState<Page>(currentPage),
     [menu, setMenu] = useState(false),
     [connected, setConnected] = useState(false),
-    [history, setHistory] = useState<Prediction[]>(loadHistory);
+    [history, setHistory] = useState<Prediction[]>(loadHistory),
+    [browserModel, setBrowserModel] = useState<BrowserModelMetadata | null>(null);
   useEffect(() => {
     const change = () => {
       setPage(currentPage());
@@ -125,6 +127,13 @@ function App() {
       .catch(() => setConnected(false));
     return () => c.abort();
   }, [page]);
+  useEffect(() => {
+    let active = true;
+    getBrowserModelMetadata().then((metadata) => {
+      if (active) setBrowserModel(metadata);
+    });
+    return () => { active = false; };
+  }, []);
   function save(p: Prediction) {
     const rows = [...history, p].slice(-500);
     setHistory(rows);
@@ -174,7 +183,7 @@ function App() {
         {page === "Home" ? (
           <Home />
         ) : page === "AI Scanner" ? (
-          <Scanner connected={connected} save={save} />
+          <Scanner connected={connected} browserModel={browserModel} save={save} />
         ) : page === "Model Comparison" ? (
           <Comparison />
         ) : page === "Analytics" ? (
@@ -446,9 +455,11 @@ function PageHeading({
 }
 function Scanner({
   connected,
+  browserModel,
   save,
 }: {
   connected: boolean;
+  browserModel: BrowserModelMetadata | null;
   save: (p: Prediction) => boolean;
 }) {
   const [file, setFile] = useState<File | null>(null),
@@ -485,7 +496,7 @@ function Scanner({
   }
   async function analyze() {
     if (!file) return;
-    if (!API) {
+    if (!connected && !browserModel) {
       setBusy(true);
       setError("");
       setResult(null);
@@ -505,22 +516,28 @@ function Scanner({
     const c = new AbortController(),
       timeout = setTimeout(() => c.abort(), 60000);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const response = await fetch(`${API}/predict`, {
-        method: "POST",
-        body: form,
-        signal: c.signal,
-      });
-      const body = await response.json();
-      if (!response.ok)
-        throw new Error(
-          typeof body.detail === "string"
-            ? body.detail
-            : "The API could not analyze this image.",
-        );
+      let predictionBody: unknown;
+      if (connected && API) {
+        const form = new FormData();
+        form.append("file", file);
+        const response = await fetch(`${API}/predict`, {
+          method: "POST",
+          body: form,
+          signal: c.signal,
+        });
+        const body = await response.json();
+        if (!response.ok)
+          throw new Error(
+            typeof body.detail === "string"
+              ? body.detail
+              : "The API could not analyze this image.",
+          );
+        predictionBody = body;
+      } else {
+        predictionBody = await classifyAppleInBrowser(file);
+      }
       const prediction = {
-        ...parsePrediction(body),
+        ...parsePrediction(predictionBody),
         timestamp: new Date().toISOString(),
         id: crypto.randomUUID(),
       };
@@ -547,15 +564,17 @@ function Scanner({
       <PageHeading
         label="THE AI WORKSPACE"
         title="A closer look, powered by vision."
-        description="Upload an apple image for experimental browser screening, or connect a trained research model for classification."
+        description="Upload one apple image. A published trained model can classify it as fresh or rotten directly on your device."
       />
       <div className="status-banner">
-        <span className={connected ? "live-dot" : "offline-dot"} />
-        <strong>{connected ? "Model connected" : "Model Not Connected"}</strong>
+        <span className={connected || browserModel ? "live-dot" : "offline-dot"} />
+        <strong>{connected ? "AI model connected" : browserModel ? "AI model ready — on-device" : "Model Not Connected"}</strong>
         <span>
           {connected
-            ? "Ready for inference"
-            : "Browser preview available; connect a trained model for validated predictions."}
+            ? "Server model ready for image classification"
+            : browserModel
+              ? `MobileNetV2 trained on apple images · held-out test accuracy ${(browserModel.accuracy * 100).toFixed(1)}% · ${browserModel.test_samples} test images`
+              : "Experimental image statistics only. No trained model published yet."}
         </span>
         <Link to="Research">
           Setup & methodology <ChevronRight size={15} />
@@ -624,7 +643,7 @@ function Scanner({
             onClick={analyze}
           >
             <ScanLine size={19} />
-            {busy ? "Analyzing…" : API ? "Analyze Apple" : "Screen Image (Experimental)"}
+            {busy ? "Analyzing…" : connected || browserModel ? "Classify Apple (AI)" : "Screen Image (Experimental)"}
             <ArrowRight size={17} />
           </button>
           {error && (
@@ -689,8 +708,9 @@ function Scanner({
                 <dd>{result.inference_ms.toFixed(1)} ms</dd>
               </dl>
               <p className="muted">
-                Class probability measures model confidence. It is not a quality
-                score or a food safety assessment.
+                Prediction from an apple-specific trained model. Probabilities reflect
+                model confidence, not food safety or a formal commercial grade.
+                Check the actual fruit before making decisions.
               </p>
               {storageWarning && (
                 <p role="alert" className="error">
