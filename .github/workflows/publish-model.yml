@@ -1,14 +1,10 @@
 name: Publish trained apple model
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/publish-model.yml'
   workflow_dispatch:
     inputs:
       run_id:
-        description: "Successful training workflow run ID (leave empty for initial run)"
-        required: false
+        description: "Successful three-class training workflow run ID"
+        required: true
         type: string
   workflow_run:
     workflows: ["Train apple classifier (manual)"]
@@ -31,7 +27,7 @@ jobs:
         with:
           name: apple-mobilenet-checkpoint-and-metrics
           path: published
-          run-id: ${{ inputs.run_id || github.event.workflow_run.id || '38952030576' }}
+          run-id: ${{ inputs.run_id || github.event.workflow_run.id }}
           github-token: ${{ github.token }}
       - uses: actions/setup-python@v5
         with:
@@ -48,7 +44,7 @@ jobs:
             --evaluation published/experiments/results.json \
             --output-dir frontend/public/models
           cp published/experiments/results.json frontend/public/experiments/results.json
-          test -s frontend/public/models/apple-mobilenet.onnx
+          test -s frontend/public/models/apple-mobilenet-open-set-v2.onnx
           test -s frontend/public/models/manifest.json
       - name: Upload tested model as durable backup
         uses: actions/upload-artifact@v4
@@ -62,7 +58,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f frontend/public/models/apple-mobilenet.onnx
+          git add -f frontend/public/models/apple-mobilenet-open-set-v2.onnx
+          git rm -f --ignore-unmatch frontend/public/models/apple-mobilenet.onnx
           git add -f frontend/public/models/manifest.json
           git add frontend/public/experiments/results.json
           if git diff --cached --quiet; then
