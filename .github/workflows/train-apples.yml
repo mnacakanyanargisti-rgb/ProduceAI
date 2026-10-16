@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/train-apples.yml'
+      - 'ml/fetch_apples.py'
   workflow_dispatch:
     inputs:
       epochs:
