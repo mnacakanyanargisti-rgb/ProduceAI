@@ -1,10 +1,17 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { test, expect } from "@playwright/test";
 
 // This test intentionally runs only on builds with an actual evaluated ONNX asset.
 // It verifies real browser execution (rather than only loading a pretty status badge).
 test("published MobileNet classifies an image on-device", async ({ page }) => {
-  test.skip(!existsSync("public/models/apple-mobilenet.onnx"), "Trained model not yet published");
+  const manifest = existsSync("public/models/manifest.json")
+    ? JSON.parse(readFileSync("public/models/manifest.json", "utf-8"))
+    : null;
+  test.skip(
+    !existsSync("public/models/apple-mobilenet.onnx") ||
+    manifest?.labels?.[2] !== "Not an Apple",
+    "Trained three-class model not yet published",
+  );
   test.setTimeout(150_000);
   await page.goto("./#/ai-scanner");
   await expect(page.getByText("AI model ready — on-device")).toBeVisible({ timeout: 20_000 });
@@ -31,7 +38,5 @@ test("published MobileNet classifies an image on-device", async ({ page }) => {
   await page.getByRole("button", { name: "Classify Apple (AI)" }).click();
   await expect(page.getByText("MODEL PREDICTION")).toBeVisible({ timeout: 100_000 });
   await expect(page.getByText(/MobileNetV2 \(on-device ONNX\)/)).toBeVisible();
-  await expect(page.getByText("Fresh Apple", { exact: true }).or(
-    page.getByRole("heading", { name: "Rotten or Defective Apple" }),
-  ).first()).toBeVisible();
+  await expect(page.locator(".result h2")).toHaveText(/Fresh Apple|Rotten or Defective Apple|Not an Apple/);
 });
