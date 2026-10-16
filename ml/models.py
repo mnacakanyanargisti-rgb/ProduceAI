@@ -5,7 +5,7 @@ import numpy as np
 import torch.nn as nn
 from torchvision import models, transforms
 
-LABELS = ["Fresh Apple", "Rotten or Defective Apple"]
+LABELS = ["Fresh Apple", "Rotten or Defective Apple", "Not an Apple"]
 NORMALIZE = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
 
@@ -30,7 +30,7 @@ def build_model(name, pretrained=False):
             nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
             nn.Dropout(0.2),
-            nn.Linear(64, 2),
+            nn.Linear(64, len(LABELS)),
         )
     if name == "mobilenet":
         model = models.mobilenet_v2(
@@ -38,7 +38,7 @@ def build_model(name, pretrained=False):
         )
         for p in model.features.parameters():
             p.requires_grad = False
-        model.classifier[1] = nn.Linear(model.last_channel, 2)
+        model.classifier[1] = nn.Linear(model.last_channel, len(LABELS))
         return model
     raise ValueError("Unknown architecture")
 
