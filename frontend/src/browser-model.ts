@@ -12,8 +12,11 @@ export type BrowserModelMetadata = {
   model_name: string;
   model_version: string;
   labels: [string, string, string];
-  min_apple_confidence: number;
-  max_nonapple_probability: number;
+  not_apple_min_probability: number;
+  apple_max_nonapple_probability: number;
+  min_apple_class_probability: number;
+  uncertain_label: "Unable to Verify";
+  external_orchard: {overall: {apple_acceptance: number; samples: number}};
   negative_group_rejection: Record<string, { samples: number; rejection_rate: number }>;
   input_size: number;
   onnx_file: string;
@@ -42,9 +45,13 @@ function isManifest(value: unknown): value is BrowserModelMetadata {
     typeof m.model_version === "string" &&
     Array.isArray(m.labels) && m.labels.length === 3 &&
     m.labels[0] === LABELS[0] && m.labels[1] === LABELS[1] && m.labels[2] === LABELS[2] &&
-    m.min_apple_confidence === 0.8 && m.max_nonapple_probability === 0.15 &&
+    m.not_apple_min_probability === 0.65 &&
+    m.apple_max_nonapple_probability === 0.50 &&
+    m.min_apple_class_probability === 0.45 &&
+    m.uncertain_label === "Unable to Verify" &&
+    Number.isFinite(m.external_orchard?.overall?.apple_acceptance) &&
     m.input_size === 224 &&
-    m.onnx_file === "apple-mobilenet-open-set-v2.onnx" &&
+    m.onnx_file === "apple-mobilenet-open-set-v3.onnx" &&
     Number.isFinite(m.accuracy) && (m.accuracy ?? -1) >= 0 && (m.accuracy ?? 2) <= 1 &&
     Number.isFinite(m.test_samples) && (m.test_samples ?? 0) >= 10;
 }
@@ -130,12 +137,15 @@ export async function classifyAppleInBrowser(
     const meta = await getBrowserModelMetadata();
     if (!meta) throw new Error("The AI model metadata is missing.");
     const appleClass = probabilities[0] >= probabilities[1] ? 0 : 1;
-    // Match ml.inference.classify_probabilities: a weakly supported apple
-    // classification is rejected instead of reporting invented fruit quality.
-    const label = (
-      probabilities[appleClass] < meta.min_apple_confidence ||
-      probabilities[2] > meta.max_nonapple_probability
-    ) ? LABELS[2] : LABELS[appleClass];
+    // Distinguish genuine negative evidence from ambiguous phone photos.
+    // Lack of 80% certainty alone must NOT be reported as "not an apple".
+    const label = probabilities[2] >= meta.not_apple_min_probability &&
+      probabilities[2] > probabilities[appleClass]
+      ? LABELS[2]
+      : probabilities[appleClass] >= meta.min_apple_class_probability &&
+          probabilities[2] <= meta.apple_max_nonapple_probability
+        ? LABELS[appleClass]
+        : meta.uncertain_label;
     return {
       label,
       probabilities: Object.fromEntries(
