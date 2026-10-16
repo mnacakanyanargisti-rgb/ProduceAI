@@ -59,11 +59,13 @@ def main():
                        entry["name"].lower().endswith((".jpg", ".jpeg", ".png", ".webp"))]
             if len(entries) < quota:
                 raise ValueError(f"Insufficient {partition}/{upstream} images: {len(entries)} < {quota}")
-            selected = rng.sample(entries, quota)
+            # Image repositories may contain duplicate bytes under different filenames.
+            # Draw extra candidates, then keep only truly distinct images.
+            shuffled = rng.sample(entries, len(entries))
             destination = output / category
             destination.mkdir(parents=True, exist_ok=True)
 
-            def save(entry):
+            def load(entry):
                 url = f"https://raw.githubusercontent.com/{REPOSITORY}/{BRANCH}/{quote(entry['path'], safe='/')}"
                 blob = fetch(url)
                 with Image.open(io.BytesIO(blob)) as original:
@@ -72,18 +74,29 @@ def main():
                     buff = io.BytesIO()
                     photo.save(buff, format="JPEG", quality=91)
                 data = buff.getvalue()
-                digest = hashlib.sha256(data).hexdigest()
-                (destination / f"orchard__{digest}.jpg").write_bytes(data)
-                return digest
+                return hashlib.sha256(data).hexdigest(), data
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as pool:
-                hashes = list(pool.map(save, selected))
-            if len(set(hashes)) != quota:
-                raise ValueError(f"Exact duplicate pictures in {folder}")
-            if hashes_by_partition[partition].intersection(hashes):
+            unique = {}
+            # Download at most a quota plus a limited replacement buffer initially.
+            # If many duplicates exist, continue with the remaining candidates.
+            for offset in range(0, len(shuffled), 40):
+                batch = shuffled[offset:offset + 40]
+                with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as pool:
+                    for digest, data in pool.map(load, batch):
+                        if digest not in unique and digest not in hashes_by_partition[partition]:
+                            unique[digest] = data
+                if len(unique) >= quota:
+                    break
+            if len(unique) < quota:
+                raise ValueError(f"Only {len(unique)} unique images in {folder}; need {quota}")
+            selected_unique = list(unique.items())[:quota]
+            for digest, data in selected_unique:
+                (destination / f"orchard__{digest}.jpg").write_bytes(data)
+            new_hashes = {digest for digest, _ in selected_unique}
+            if hashes_by_partition[partition] & new_hashes:
                 raise ValueError(f"Duplicate between classes inside {partition}")
-            hashes_by_partition[partition].update(hashes)
-            print(f"{partition} orchard {category}: {len(hashes)}", flush=True)
+            hashes_by_partition[partition].update(new_hashes)
+            print(f"{partition} orchard {category}: {len(new_hashes)} unique", flush=True)
     if hashes_by_partition["Train"] & hashes_by_partition["Test"]:
         raise ValueError("Orchard test leaks into training set")
     (args.external_test / "provenance.json").write_text(json.dumps({
