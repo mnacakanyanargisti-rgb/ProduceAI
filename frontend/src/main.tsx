@@ -33,6 +33,7 @@ import {
 import "./style.css";
 import { inspectImage, type VisualSummary } from "./visual-analysis";
 import { classifyAppleInBrowser, getBrowserModelMetadata, type BrowserModelMetadata } from "./browser-model";
+import { AppleCropEditor } from "./apple-crop";
 
 const UsageChart = lazy(() =>
   import("./charts").then((m) => ({ default: m.UsageChart })),
@@ -469,7 +470,8 @@ function Scanner({
     [result, setResult] = useState<Prediction | null>(null),
     [drag, setDrag] = useState(false),
     [storageWarning, setStorageWarning] = useState(""),
-    [visual, setVisual] = useState<VisualSummary | null>(null);
+    [visual, setVisual] = useState<VisualSummary | null>(null),
+    [cropping, setCropping] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!file) {
@@ -482,6 +484,7 @@ function Scanner({
   }, [file]);
   function select(f?: File) {
     if (busy || !f) return;
+    setCropping(false);
     setError("");
     setResult(null);
     setVisual(null);
@@ -629,6 +632,19 @@ function Scanner({
                 {(file.size / 1024).toFixed(0)} KB · Click image to replace
               </span>
             </p>
+          )}
+          {file && (
+            <div style={{ marginTop: 12 }}>
+              <button className="button secondary" type="button" disabled={busy} onClick={() => setCropping(true)}>
+                Crop to apple · Առանձնացնել խնձորը
+              </button>
+              <p className="muted" style={{ marginTop: 8 }}>
+                Using a screenshot, Google image, or busy background? Crop tightly around the apple before analyzing.
+              </p>
+            </div>
+          )}
+          {file && cropping && (
+            <AppleCropEditor file={file} onApply={(cropped) => select(cropped)} onCancel={() => setCropping(false)} />
           )}
           <div className="tip">
             <Leaf size={17} />
