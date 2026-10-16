@@ -25,6 +25,9 @@ test("all routes render under the repository base path without overflow", async 
 test("scanner never fabricates a prediction when disconnected", async ({
   page,
 }) => {
+  await page.route("**/models/manifest.json", (route) =>
+    route.fulfill({ status: 404, body: "No model" }),
+  );
   await page.route("**/health", (route) =>
     route.fulfill({ json: { status: "ok", model_loaded: false } }),
   );
