@@ -6,12 +6,15 @@ import type { Prediction } from "./data";
 
 const MODEL_ROOT = import.meta.env.BASE_URL + "models/";
 const RUNTIME_ROOT = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/";
-const LABELS = ["Fresh Apple", "Rotten or Defective Apple"] as const;
+const LABELS = ["Fresh Apple", "Rotten or Defective Apple", "Not an Apple"] as const;
 
 export type BrowserModelMetadata = {
   model_name: string;
   model_version: string;
-  labels: [string, string];
+  labels: [string, string, string];
+  min_apple_confidence: number;
+  max_nonapple_probability: number;
+  negative_group_rejection: Record<string, { samples: number; rejection_rate: number }>;
   input_size: number;
   onnx_file: string;
   accuracy: number;
@@ -37,8 +40,9 @@ function isManifest(value: unknown): value is BrowserModelMetadata {
   const m = value as Partial<BrowserModelMetadata>;
   return m.model_name === "MobileNetV2" &&
     typeof m.model_version === "string" &&
-    Array.isArray(m.labels) && m.labels.length === 2 &&
-    m.labels[0] === LABELS[0] && m.labels[1] === LABELS[1] &&
+    Array.isArray(m.labels) && m.labels.length === 3 &&
+    m.labels[0] === LABELS[0] && m.labels[1] === LABELS[1] && m.labels[2] === LABELS[2] &&
+    m.min_apple_confidence === 0.8 && m.max_nonapple_probability === 0.15 &&
     m.input_size === 224 &&
     m.onnx_file === "apple-mobilenet.onnx" &&
     Number.isFinite(m.accuracy) && (m.accuracy ?? -1) >= 0 && (m.accuracy ?? 2) <= 1 &&
@@ -115,18 +119,28 @@ export async function classifyAppleInBrowser(
     const input = new ort.Tensor("float32", toTensor(bitmap), [1, 3, 224, 224]);
     const output = await session.run({ image: input });
     const logits = output.logits?.data;
-    if (!logits || logits.length !== 2 ||
-        !Number.isFinite(logits[0]) || !Number.isFinite(logits[1])) {
+    if (!logits || logits.length !== 3 ||
+        !Array.from(logits).every(Number.isFinite)) {
       throw new Error("The AI model returned an invalid prediction.");
     }
-    const max = Math.max(logits[0], logits[1]);
-    const a = Math.exp(logits[0] - max), b = Math.exp(logits[1] - max);
-    const p0 = a / (a + b), p1 = b / (a + b);
+    const max = Math.max(...logits);
+    const weights = Array.from(logits, (value) => Math.exp(value - max));
+    const total = weights.reduce((a, b) => a + b, 0);
+    const probabilities = weights.map((value) => value / total);
     const meta = await getBrowserModelMetadata();
     if (!meta) throw new Error("The AI model metadata is missing.");
+    const appleClass = probabilities[0] >= probabilities[1] ? 0 : 1;
+    // Match ml.inference.classify_probabilities: a weakly supported apple
+    // classification is rejected instead of reporting invented fruit quality.
+    const label = (
+      probabilities[appleClass] < meta.min_apple_confidence ||
+      probabilities[2] > meta.max_nonapple_probability
+    ) ? LABELS[2] : LABELS[appleClass];
     return {
-      label: p0 >= p1 ? LABELS[0] : LABELS[1],
-      probabilities: { [LABELS[0]]: p0, [LABELS[1]]: p1 },
+      label,
+      probabilities: Object.fromEntries(
+        LABELS.map((name, i) => [name, probabilities[i]]),
+      ),
       model_name: meta.model_name + " (on-device ONNX)",
       model_version: meta.model_version,
       inference_ms: Math.round((performance.now() - started) * 10) / 10,
