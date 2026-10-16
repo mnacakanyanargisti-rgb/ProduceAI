@@ -40,3 +40,43 @@ test("published MobileNet classifies an image on-device", async ({ page }) => {
   await expect(page.getByText(/MobileNetV2 \(on-device ONNX\)/)).toBeVisible();
   await expect(page.locator(".result h2")).toHaveText(/Fresh Apple|Rotten or Defective Apple|Not an Apple/);
 });
+
+test("rejects real candy and cigarette photos as Not an Apple", async ({ page, request }) => {
+  const manifest = existsSync("public/models/manifest.json")
+    ? JSON.parse(readFileSync("public/models/manifest.json", "utf-8"))
+    : null;
+  test.skip(
+    !existsSync("public/models/apple-mobilenet-open-set-v2.onnx") ||
+    manifest?.labels?.[2] !== "Not an Apple",
+    "Only applies to the evaluated three-class model",
+  );
+  test.setTimeout(180_000);
+  await page.goto("./#/ai-scanner");
+  await expect(page.getByText("AI model ready — on-device")).toBeVisible({ timeout: 25_000 });
+
+  const realExamples = [
+    {
+      name: "cigarette.png",
+      url: "https://raw.githubusercontent.com/LoaferCH/dataset_classification_cigarettes/master/cigs/1.png",
+    },
+    {
+      name: "candy.png",
+      url: "https://raw.githubusercontent.com/PerceptiLabs/Recognizing-Groceries/main/data/CANDY/CANDY0369.png",
+    },
+  ];
+  for (const image of realExamples) {
+    const download = await request.get(image.url, { timeout: 35_000 });
+    expect(download.ok(), `Fixture download failed: ${image.name}`).toBeTruthy();
+    await page.locator("input[type=file]").setInputFiles({
+      name: image.name,
+      mimeType: "image/png",
+      buffer: await download.body(),
+    });
+    await page.getByRole("button", { name: "Classify Apple (AI)" }).click();
+    await expect(page.locator(".result h2")).toHaveText("Not an Apple", {
+      timeout: 90_000,
+    });
+    await expect(page.getByText("Սա խնձոր չէ", { exact: false })).toBeVisible();
+    await expect(page.locator(".result .probability")).toHaveCount(0);
+  }
+});
