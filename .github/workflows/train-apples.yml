@@ -1,5 +1,8 @@
 name: Train apple classifier (manual)
 on:
+  push:
+    paths:
+      - '.github/workflows/train-apples.yml'
   workflow_dispatch:
     inputs:
       epochs:
