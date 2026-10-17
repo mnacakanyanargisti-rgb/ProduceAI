@@ -1,20 +1,55 @@
-# Experiment protocol
+# Experiment protocol and recorded results
 
-The initial experiment registry is empty. Do not replace it with illustrative metrics. Only `python -m ml.evaluate` should generate reported classification metrics from held-out predictions.
+## Published snapshot
 
-For each run, retain the following outside the public frontend when it contains sensitive paths:
+`frontend/public/experiments/results.json` is the **public, website-facing results registry**. `experiments/results.json` mirrors that research snapshot in source control; training scripts may overwrite it during new local runs. The model manifest is `frontend/public/models/manifest.json`. Both registries should be updated together by the model-publication workflow and checked by `frontend/scripts/verify-research-artifacts.mjs`.
 
-- Source dataset URL, verified license, acquisition date, label audit notes, cultivar/capture conditions.
-- EDA output, duplicate audit, group/near-duplicate decisions, and immutable manifest hash.
-- Random seed, package environment, hardware and CPU thread configuration.
-- Training configuration, full training/validation loss history, checkpoint hash, selected epoch and selection criterion.
-- Test set size, class order, macro precision/recall/F1, accuracy, confusion matrix and warmed-up mean CPU latency.
-- Failure analysis, uncertainty and calibration checks, subgroup behavior, and limitations.
+Published model: **MobileNetV2**, version `apples-orchard-v3`. These figures were recorded by a repository training/evaluation run and committed with the model; they have **not** been independently reproduced for this document.
 
-All three approaches must use the same audited split to make comparisons meaningful. The current script does not perform hyperparameter search or statistical significance testing. If you add these, tune with training/validation data, predefine the comparison protocol, and reserve the test split for final evaluation.
+| Held-out classification metric | Recorded value |
+| --- | ---: |
+| Images | 222 |
+| Accuracy | 95.05% |
+| Macro precision | 95.85% |
+| Macro recall | 95.30% |
+| Macro F1 | 95.56% |
+| Mean warmed-up CPU preprocessing + inference | 18.36 ms/image |
 
-The test set is intended to represent the initial fresh/rotten image dataset, not all local agricultural conditions. Field validation requires independently collected local images and expert-reviewed labels. A high test accuracy alone does not validate commercial grading, safety, or defect location.
+The 222-image test includes fresh apple, defective apple and selected non-apple examples. The recorded confusion matrix is 4×4: three actual/predicted classes plus an extra **Unable to Verify** prediction column/row. Do not treat the abstention class as a fourth ground-truth training class.
 
-JSON schema version 1 contains an `experiments` array. Each exported row includes name, version, seed, dataset, manifest_sha256, environment, history, test_samples, accuracy, precision, recall, f1, confusion_matrix, inference_ms, and latency_method. Histories use epoch, train_loss, and val_loss. The baseline has an empty history because SVM fitting has no neural epoch loss curve.
+### External apple-only evaluation
 
-Copy only the reviewed public result registry into frontend/public/experiments/results.json and commit that small file. Keep datasets, private absolute paths, environment secrets, and checkpoint binaries out of the repository.
+The separate orchard-style image evaluation records **180** upstream test photographs (90 fresh + 90 rotten/defective). It reports **92.22%** correct fresh-vs-defective classification among those images and **100% apple acceptance** in that sample. Its source is the upstream `mustafa20999/AFQC` Test partition, **not a set of original Armenian-orchard photos**. Its accuracy cannot certify other cultivars, cameras or local growing conditions.
+
+### Relevant non-apple group checks
+
+The published metadata reports 12/12 candy and 13/14 cigarette images rejected as `Not an Apple` in the named test groups. These are small, selected samples and do **not** prove the model can reject every non-apple object. Novel objects can still be misclassified as apples.
+
+### What has *not* been measured
+
+There are **no published comparable SVM or custom CNN metrics** yet, despite their training implementations. No validated pixel-level apple defect mask, calibrated freshness score, A/B/C commercial grade accuracy, volume estimate, food safety outcome, or production pricing model is established by these results. The browser's A/B/C display derives from class probabilities, and its optional visual screening is heuristic.
+
+## Reproduction requirements
+
+For every new run, record:
+
+1. Source URLs, acquisition dates, dataset licenses/permissions, labeling methods, cultivar and lighting/capture information.
+2. Exact hashes, manual duplicate and near-duplicate review, class balance, and grouping decisions before splitting.
+3. Frozen train/validation/test split, random seed, Python/dependency versions, CPU/GPU and hardware details.
+4. Training hyperparameters, selected epoch, train/validation losses, artifact checksums.
+5. Held-out sample counts, accuracy, macro precision/recall/F1, confusion matrix, abstentions and inference latency.
+6. Non-apple subgroup error rates and an independently sourced real-world apple test, with clear provenance and limitations.
+
+Use one audited, leak-free split for SVM/CNN/MobileNetV2 comparisons. Never choose hyperparameters after inspecting the final test set. Different photographs of the **same apple** should stay in the same split; existing exact-byte deduplication alone does not ensure this.
+
+## Publication and registry contract
+
+- The evaluation script `python -m ml.evaluate --checkpoint models/mobilenet.pt` writes the local registry by default.
+- The orchard evaluation adds external data to that registry.
+- `ml/export_browser.py` requires matching evaluation metadata, selected negative-group rejection thresholds, and external apple acceptance before exporting a public ONNX file and SHA-256 manifest.
+- `.github/workflows/publish-model.yml` copies the evaluated results into **both** tracked JSON paths, commits them with the ONNX and manifest, and triggers the Pages workflow.
+- `node frontend/scripts/verify-research-artifacts.mjs` checks model SHA-256, class/metric consistency, result-registry agreement and basic confusion-matrix integrity.
+
+Inspect licenses **before** reproducing/commercializing: the recorded training workflow includes sources that are unverified or marked academic-only. Public model availability is not a commercial-use permission.
+
+See also [README](../README.md), [training](TRAIN_REAL_MODEL.md), and [architecture](ARCHITECTURE.md).

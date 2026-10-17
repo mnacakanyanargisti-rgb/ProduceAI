@@ -21,4 +21,5 @@ export default tseslint.config(
     rules: hooks.configs.recommended.rules,
   },
   { files: ["e2e/**/*.ts"], languageOptions: { globals: globals.node } },
+  { files: ["scripts/**/*.mjs"], languageOptions: { globals: globals.node } },
 );
