@@ -34,6 +34,7 @@ import "./style.css";
 import { inspectImage, type VisualSummary } from "./visual-analysis";
 import { classifyAppleInBrowser, getBrowserModelMetadata, type BrowserModelMetadata } from "./browser-model";
 import { AppleCropEditor } from "./apple-crop";
+import { estimateAppleGrade } from "./apple-grading";
 
 const UsageChart = lazy(() =>
   import("./charts").then((m) => ({ default: m.UsageChart })),
@@ -567,7 +568,7 @@ function Scanner({
       <PageHeading
         label="THE AI WORKSPACE"
         title="A closer look, powered by vision."
-        description="Upload one apple in natural light. The model classifies fresh/defective apples and flags confident non-apple or uncertain images instead of making up a grade."
+        description="Scan an apple for a preliminary freshness estimate and A/B/C grade. Not-an-apple and uncertain results are never graded."
       />
       <div className="status-banner">
         <span className={connected || browserModel ? "live-dot" : "offline-dot"} />
@@ -670,7 +671,7 @@ function Scanner({
         </section>
         <section className="panel">
           <div className="panel-heading">
-            <h2>Classification results</h2>
+            <h2>Apple grading results</h2>
             <span className="tag">02 / OUTPUT</span>
           </div>
           {visual ? (
@@ -705,7 +706,25 @@ function Scanner({
                 <Check />
               </span>
               <p>MODEL PREDICTION</p>
-              <h2>{result.label === "Unable to Verify" ? "Unable to Verify — Անորոշ արդյունք" : result.label}</h2>
+              {estimateAppleGrade(result) ? (
+                <>
+                  <h2 data-testid="apple-grade">Grade {estimateAppleGrade(result)!.grade} · {estimateAppleGrade(result)!.description}</h2>
+                  <div className="probability" style={{ marginTop: 20, marginBottom: 18 }}>
+                    <div>
+                      <span>Estimated freshness · Թարմության գնահատական</span>
+                      <strong data-testid="freshness-score">{estimateAppleGrade(result)!.score.toFixed(1)}%</strong>
+                    </div>
+                    <meter min={0} max={100} value={estimateAppleGrade(result)!.score} />
+                  </div>
+                  <p className="muted">
+                    Grade A: 75–100% · Grade B: 50–below 75% · Grade C: below 50%.
+                    The percentage is estimated from fresh-vs-defective model scores,
+                    not a calibrated freshness measurement or official commercial grade.
+                  </p>
+                </>
+              ) : (
+                <h2>{result.label === "Unable to Verify" ? "Unable to Verify — Անորոշ արդյունք" : result.label}</h2>
+              )}
               {result.label === "Not an Apple" && (
                 <p className="error" role="status" style={{ marginBottom: 14 }}>
                   Սա խնձոր չէ — Not an Apple. Upload one real apple against a
@@ -719,17 +738,19 @@ function Scanner({
                   Որակի գնահատական չի տրվել։
                 </p>
               )}
-              {Object.entries(result.probabilities)
-                .filter(() => result.label !== "Not an Apple" && result.label !== "Unable to Verify")
-                .map(([label, p]) => (
-                <div className="probability" key={label}>
-                  <div>
-                    <span>{label}</span>
-                    <strong>{(p * 100).toFixed(1)}%</strong>
-                  </div>
-                  <meter min={0} max={1} value={p} />
-                </div>
-              ))}
+              {estimateAppleGrade(result) && (
+                <details style={{ marginTop: 12, marginBottom: 15 }}>
+                  <summary style={{ cursor: "pointer", fontWeight: 600 }}>
+                    Model probabilities · Մոդելի հավանականություններ
+                  </summary>
+                  {Object.entries(result.probabilities).map(([label, p]) => (
+                    <div className="probability" key={label}>
+                      <div><span>{label}</span><strong>{(p * 100).toFixed(1)}%</strong></div>
+                      <meter min={0} max={1} value={p} />
+                    </div>
+                  ))}
+                </details>
+              )}
               {(result.label === "Not an Apple" || result.label === "Unable to Verify") && (
                 <details style={{ marginTop: 14, marginBottom: 14 }}>
                   <summary style={{ cursor: "pointer", fontWeight: 600 }}>Why did the AI reject this image? · Ինչո՞ւ չճանաչեց</summary>
@@ -762,7 +783,7 @@ function Scanner({
                   ? "The classifier detected non-apple evidence. No apple freshness score was assigned. This is an ML estimate, not proof."
                   : result.label === "Unable to Verify"
                     ? "This image is ambiguous. We cannot confirm or deny it contains an apple. No freshness classification has been assigned."
-                    : "Fresh/defective classification is made after apple verification. Probabilities are model confidence, not food-safety or a commercial grade."}
+                    : "A/B/C is a preliminary grading rule applied to relative model outputs. It does not measure physical freshness, safety or official produce quality."}
               </p>
               {storageWarning && (
                 <p role="alert" className="error">
@@ -793,8 +814,8 @@ function Scanner({
           </p>
         </section>
         <section className="panel">
-          <span className="tag">RESEARCH PLANNED</span>
-          <h3>A validated quality score</h3>
+          <span className="tag">FUTURE RESEARCH</span>
+          <h3>Validated quality grades</h3>
           <p>
             A 0–100 grading score requires an independently validated grading
             method. Classification confidence is never used as a quality score.
