@@ -74,5 +74,5 @@
   "uncertain_label": "Unable to Verify",
   "dataset": "Bangkit-JKT2-D/fruits-fresh-rotten-classification; mustafa20999/AFQC academic-only; LoaferCH/dataset_classification_cigarettes; PerceptiLabs/Recognizing-Groceries",
   "limitations": "Three-class fresh/rotten/not-apple research classifier. Open-set recognition cannot guarantee rejection of every non-apple object; not food safety or commercial grading.",
-  "model_sha256": "cb6db39fb99fe91a68ebd3c5e57e42342b5ab7e6db2588d2aaee81caeaca3de7"
+  "model_sha256": "5f383a13d4b324d010fc32c86383e2ac3d127c4c04d6d62157b12368b78b5407"
 }
