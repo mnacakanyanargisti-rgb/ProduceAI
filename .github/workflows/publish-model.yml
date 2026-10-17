@@ -44,6 +44,7 @@ jobs:
             --evaluation published/experiments/results.json \
             --output-dir frontend/public/models
           cp published/experiments/results.json frontend/public/experiments/results.json
+          cp published/experiments/results.json experiments/results.json
           test -s frontend/public/models/apple-mobilenet-open-set-v3.onnx
           test -s frontend/public/models/manifest.json
       - name: Upload tested model as durable backup
@@ -61,7 +62,7 @@ jobs:
           git add -f frontend/public/models/apple-mobilenet-open-set-v3.onnx
           git rm -f --ignore-unmatch frontend/public/models/apple-mobilenet.onnx frontend/public/models/apple-mobilenet-open-set-v2.onnx
           git add -f frontend/public/models/manifest.json
-          git add frontend/public/experiments/results.json
+          git add frontend/public/experiments/results.json experiments/results.json
           if git diff --cached --quiet; then
             echo "Model already up to date."
             exit 0
