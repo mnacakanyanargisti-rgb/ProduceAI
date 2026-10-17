@@ -1,61 +1,61 @@
-# Deployment and GitHub connection
+# ProduceAI deployment — browser-first research app
 
-## GitHub authorization
+**Current live frontend:** https://mnacakanyanargisti-rgb.github.io/ProduceAI/  
+**GitHub source:** https://github.com/mnacakanyanargisti-rgb/ProduceAI
 
-No repository has been created or pushed by this package. The chat session did not expose a GitHub OAuth, repository creation, or push capability. A GitHub plugin mention does not establish authorization.
+This repository **already exists** and GitHub Pages is already configured. The static site is built from the `main` branch by [Frontend CI and GitHub Pages](../.github/workflows/pages.yml). Do **not** create a second repository or reinitialize Git history.
 
-If the official GitHub integration in Codex offers Connect, use its browser-based authorization flow, choose the account mnacakanyanargisti-rgb, and grant only the necessary repository access. Do not paste passwords, OAuth codes, or tokens into chat. If write operations are not supported, use the following local workflow instead.
+## What actually runs on GitHub Pages
 
-1. Sign in to github.com in your browser and create an empty **public** repository named **ProduceAI** under **mnacakanyanargisti-rgb**. Do not initialize it with files.
-2. Install Git and GitHub CLI. In a terminal use `gh auth login`, choose GitHub.com, HTTPS, and browser sign-in. Complete authorization only in the official GitHub browser page. Never put credentials in source files.
-3. In the ProduceAI project root run:
+The public site uses React/Vite and loads the trained `frontend/public/models/apple-mobilenet-open-set-v3.onnx` model with ONNX Runtime Web. **Inference can run locally in the browser with no FastAPI deployment.** The model download and ONNX runtime assets require network access initially.
 
-```sh
-git init -b main
-git add .
-git commit -m "Build ProduceAI research platform and ML infrastructure"
-git remote add origin https://github.com/mnacakanyanargisti-rgb/ProduceAI.git
-git push -u origin main
-```
+`frontend/public/models/manifest.json` includes the model version, SHA-256 hash, class order and recorded evaluation references. `frontend/public/experiments/results.json` is read by the Model Comparison page; `experiments/results.json` is kept as the same checked-in snapshot. The Pages workflow runs the verifier `node scripts/verify-research-artifacts.mjs` before building so model/metrics mismatches block publication.
 
-If the repository already exists, clone it first and copy these source files into the clone. Review differences and existing history before committing; do not overwrite or force-push unrelated work.
+**Automatic updates:** new commits to `main` trigger a Pages build and deployment. Pull requests run the build/test checks but do not deploy. GitHub Actions permissions allow Pages deployment; inspect the completed run and actual URL to confirm success after a change.
 
-## GitHub Pages
+## Configure optional FastAPI inference
 
-1. Repository → Settings → Pages → Build and deployment → Source: **GitHub Actions**.
-2. Settings → Secrets and variables → Actions → Variables → New repository variable: **VITE_API_URL** = the HTTPS backend origin, e.g. `https://your-api.example.com`. No trailing path is needed. This value is public and must not contain a secret. Leave it unset for an honestly disconnected frontend.
-3. Push to main, then inspect the Frontend CI and GitHub Pages workflow. The build runs lint, unit tests, TypeScript, production build, and Chromium desktop/mobile checks. Deployment runs only for main, never PRs.
-4. Open the target URL after the workflow succeeds: https://mnacakanyanargisti-rgb.github.io/ProduceAI/ . This is a target URL, not a claim of an existing deployment.
-
-No manually configured GitHub secret is required for Pages. The workflow receives the automatic GITHUB_TOKEN and an OIDC token with narrowly scoped Pages permissions. Organization policies or branch/environment protections may require additional approval in GitHub.
-
-The Vite base is `/ProduceAI/`. Router URLs use hashes, such as `/ProduceAI/#/ai-scanner`. Assets use import.meta.env.BASE_URL. A different repository name requires changing base in vite.config.ts. Redeploy after changing VITE_API_URL.
-
-## Backend option: container on a managed host or VM
-
-Run from the repository root:
+The `backend/` service is *optional*, and GitHub Pages cannot execute Python. You need independent HTTPS container hosting if you want a separate API. Locally:
 
 ```sh
-docker build -f backend/Dockerfile -t produceai-api .
-docker run --rm -p 8000:8000 -v "${PWD}/models:/models:ro" -e MODEL_PATH=/models/mobilenet.pt -e ALLOWED_ORIGINS=https://mnacakanyanargisti-rgb.github.io produceai-api
+python -m pip install -r backend/requirements.txt
+# Configure MODEL_PATH to a locally trusted PyTorch checkpoint.
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-Use an HTTPS reverse proxy or a managed container host such as Render. Select a Docker web service with repository root as build context and backend/Dockerfile as Dockerfile path, port 8000, and health path /health. Upload/download the trusted checkpoint into a persistent mounted volume or fetch a pinned, checksum-verified artifact during controlled deployment. Set MODEL_PATH to that absolute path and ALLOWED_ORIGINS to `https://mnacakanyanargisti-rgb.github.io` (origins never contain /ProduceAI/). Restart after changing the checkpoint.
+On Windows PowerShell, one example:
 
-The container starts without weights and honestly returns model_loaded=false. Health checks only establish API reachability; separately verify model_loaded=true before enabling inference.
+```powershell
+$env:MODEL_PATH = "models/mobilenet.pt"
+$env:ALLOWED_ORIGINS = "http://127.0.0.1:5173,http://localhost:5173"
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
 
-Costs depend on CPU, RAM, storage, transfer, and uptime. PyTorch images and model startup can exceed small/free service limits; cold starts may be slow. No paid hosting has been purchased or provisioned. Check the host's current pricing before provisioning: https://render.com/pricing . For sustained inference, budget for an always-on instance and artifact storage; a GPU is optional and this code runs CPU inference.
+Use `VITE_API_URL=http://127.0.0.1:8000` in `frontend/.env.local` when testing that API from the dev site. In production, set GitHub Actions repository **variable** `VITE_API_URL` to an HTTPS API origin (not a secret or an API key). The frontend checks `GET /health` and uses `POST /predict` only if the API reports a loaded model; otherwise it can fall back to the browser ONNX classifier. Do not configure the production variable unless a working HTTPS service really exists.
 
-## Release checklist
+An API container can be built using the committed `backend/Dockerfile` and a trusted checkpoint mounted read-only. Configure `MODEL_PATH`, `ALLOWED_ORIGINS=https://mnacakanyanargisti-rgb.github.io`, HTTPS, a rate limit, logging/privacy policies, and sufficient CPU/RAM. CORS does not provide authentication. `GET /health` can report a running API even when no model is loaded; verify `model_loaded=true` explicitly.
 
-- [ ] Dataset source, license, duplicate/group audit, and split provenance documented.
-- [ ] Models trained; selected checkpoints evaluated on untouched held-out test images.
-- [ ] Export actual experiments/results.json to frontend/public/experiments/results.json.
-- [ ] Local lint, tests, production build, and responsive browser checks pass.
-- [ ] Backend runs behind HTTPS; CORS includes the exact frontend origin.
-- [ ] GET /health reports model_loaded=true and intended model name/version.
-- [ ] POST /predict returns the real checkpoint output for a known validation image.
-- [ ] Missing model, invalid images, timeout, and upload limits checked.
-- [ ] Pages Actions workflow succeeds, subpath assets load, and hash navigation refreshes.
-- [ ] No data, weights, credentials, or local/private paths staged for commit.
-- [ ] Public inference resource limits and host costs reviewed.
+## Publishing an updated model
+
+The documented path is:
+
+1. Verify image provenance, rights, labels, and group/near-duplicate audits.
+2. Train and evaluate three-class MobileNetV2 with `.github/workflows/train-apples.yml` or the equivalent vetted local pipeline.
+3. Test real non-apple rejection and an independent apple dataset; do not claim new accuracy without test evidence.
+4. The `.github/workflows/publish-model.yml` workflow verifies evaluation thresholds and ONNX/PyTorch output equivalence before committing the ONNX model, manifest, and **both** recorded experiment JSON copies.
+5. The Pages workflow validates the files, builds React, runs frontend/browser tests, and deploys.
+
+Do not manually edit performance figures to satisfy thresholds, and do not upload model checkpoints from untrusted sources. Training dataset rights are not automatically cleared by GitHub Pages publication; some existing sources have unverified or academic-only licensing.
+
+## Pre-presentation checklist
+
+- [ ] Confirm the most recent Pages workflow succeeded for the intended commit.
+- [ ] Open the homepage, scanner and model-comparison page in a private browser window.
+- [ ] Test one fresh apple, one visibly defective apple, and one non-apple image.
+- [ ] Check that accepted apples may get only **research** A/B/C estimates; uncertain and non-apple photos get no grade.
+- [ ] Verify the score is not described as measured freshness or a market standard.
+- [ ] Keep a screenshot backup and the bilingual [presentation script](PRESENTATION_GUIDE.md).
+
+## Costs and permissions
+
+The public static website is on GitHub Pages; a separate hosted Python API could incur charges and maintenance, but is not required for the current on-device demo. Model/dataset permissions are separate from the MIT license of the original application code. Store no credentials in repository source or in chat.
