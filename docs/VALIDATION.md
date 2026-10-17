@@ -1,29 +1,43 @@
-# Delivery validation — 16 October 2026
+# ProduceAI validation status — 17 October 2026
 
-## Completed checks
+This is a research status record, **not** a guarantee of commercial fruit-quality accuracy. The older initial delivery report was written before the published model existed; its claims of no repository, model or deployment no longer describe the current state.
 
-- Production frontend script `pnpm build`: passed (TypeScript project check and Vite build).
-- ESLint: passed.
-- Frontend Vitest: 2 tests passed (upload constraints and prediction response contract).
-- FastAPI pytest: 4 tests passed (health/unavailable model, MIME/decode/size/missing upload validation, allowed CORS preflight, bounded request body without Content-Length).
-- Playwright: 6 browser tests passed across desktop, 390px mobile, and 320px narrow layouts. Tests visit all six routes under /ProduceAI/, check horizontal overflow, and verify disconnected/invalid-upload behavior.
-- Four screenshots captured from the built frontend; desktop homepage, scanner, and mobile layout visually reviewed. No page-level JavaScript exceptions were recorded during capture.
-- Python modules compile and structured JSON files parse.
+## Verified repository and CI evidence
 
-The main JavaScript bundle is approximately 263 kB minified (82 kB gzip). Charts load in a separate approximately 386 kB chunk when needed. These are build artifact sizes, not model performance metrics.
+- Source repository: https://github.com/mnacakanyanargisti-rgb/ProduceAI
+- Published frontend source includes a versioned MobileNetV2 ONNX binary and matching `manifest.json`.
+- Published evaluation registry at `frontend/public/experiments/results.json` records `apples-orchard-v3` results on 222 held-out examples and 180 external apple photos.
+- GitHub Actions [Frontend CI and GitHub Pages run 39025795157](https://github.com/mnacakanyanargisti-rgb/ProduceAI/actions/runs/39025795157) completed **successfully** for commit `9c5bfa52` on 17 October 2026.
+- GitHub Actions [API tests run 39025795114](https://github.com/mnacakanyanargisti-rgb/ProduceAI/actions/runs/39025795114) completed **successfully** for the same commit.
+- GitHub Actions [Publish trained apple model run 38960792533](https://github.com/mnacakanyanargisti-rgb/ProduceAI/actions/runs/38960792533) completed **successfully** on 16 October 2026.
 
-## Local environment
+Those run statuses were obtained from GitHub; they do **not** substitute for personally reproducing all training metrics or independently testing a random new set of Armenian apples. After each new PR or merge, inspect its *own* latest workflow results rather than reusing these older run IDs.
 
-Node 24.19.0, pnpm 11.25.0, Python 3.12. Frontend dependency versions are frozen in frontend/pnpm-lock.yaml. API checks used FastAPI 0.143.3, Starlette 1.8.0, Pillow 12.3.0, pytest 9.1.1, and httpx 0.28.1. Starlette emitted an httpx deprecation warning; the four assertions suites passed.
+## Automated evidence integrity
 
-Browser tests used an available Chromium headless shell executable supplied through PLAYWRIGHT_EXECUTABLE_PATH. Because subprocess cleanup is restricted in this local Windows environment, the final browser run used an independently running production preview via PLAYWRIGHT_BASE_URL=http://127.0.0.1:4174/ProduceAI/. The default Playwright configuration starts its own preview for CI; that Linux workflow has not been executed on GitHub in this session.
+The Pages workflow additionally runs `node frontend/scripts/verify-research-artifacts.mjs` (with `frontend/` as its working directory). The script checks:
 
-## Not performed / not claimed
+1. Published and root research JSON registries match.
+2. A published experiment matches MobileNetV2 `model_version`.
+3. Reported accuracy, F1, sample count, negative rejection and external apple results agree with the manifest.
+4. Confusion-matrix counts sum to the reported test sample total.
+5. The actual ONNX binary's SHA-256 hash agrees with the published manifest.
 
-- No dataset was provided or downloaded; no apple model was trained or evaluated.
-- PyTorch/scikit-learn/OpenCV training and real-checkpoint inference were not executed here. The shared training/evaluation/inference source is prepared and syntax checked; execute it against an audited dataset before reporting experimental results.
-- No model accuracy, precision, recall, F1, defect location, or commercial quality score is claimed.
-- No GitHub OAuth authorization, repository creation, commit/push, Pages deployment, backend provisioning, or public URL verification occurred. Follow DEPLOYMENT.md.
-- Public-service rate limiting, authentication, real-world field validation, localization, and validated quality scoring remain future work.
+This check catches version/metadata drift. It cannot prove that training labels are correct, that source licenses permit every use, or that the model generalizes to a new orchard.
 
-The delivered UI reports Model Not Connected and shows empty experiment/history states until real data is available. Screenshots depict those actual states, not sample predictions.
+## Recorded research evidence and scope
+
+From the committed result JSON: test accuracy **95.05%** on **222** images, macro F1 **95.56%**, and separate fresh-vs-defective correct classification **92.22%** on **180** external orchard-style images. The latter come from the upstream `AFQC` published test partition, not photographs collected in Armenian orchards for this project.
+
+The published result file contains **one measured MobileNetV2 experiment**. SVM and CNN are implemented as possible baselines; their accuracy has not been published in this registry. Classification numbers do **not** measure defect segmentation or A/B/C market grading.
+
+## Still to verify before real-world use
+
+- Independent confirmation of all data permissions (at least one source is marked academic-only in research metadata).
+- Manual label, cultivar, exact/near-duplicate and session-level leakage audit.
+- Fresh, rotten, and non-apple photos collected under realistic Armenian lighting and background conditions.
+- Confidence calibration, false-accept and false-reject costs, and new unknown objects.
+- Pixel-level annotated blemish masks and expert-validated commercial thresholds, if defect localization/pricing is later added.
+- Production security, monitoring and access controls for any independently deployed public FastAPI service.
+
+Use the [presentation guide](PRESENTATION_GUIDE.md) to keep these limitations explicit during a live demonstration.
