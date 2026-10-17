@@ -31,6 +31,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm test
+      - run: node scripts/verify-research-artifacts.mjs
       - run: pnpm build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
