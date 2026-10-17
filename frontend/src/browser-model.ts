@@ -93,14 +93,29 @@ async function loadSession(): Promise<{ ort: OrtRuntime; session: OrtSession }> 
   return sessionPromise;
 }
 
-function toTensor(bitmap: ImageBitmap): Float32Array {
+type Crop = { x: number; y: number; width: number; height: number };
+
+export function portraitAppleCandidates(width: number, height: number): Crop[] {
+  if (width < 150 || height < 150 || height / width < 1.15) return [];
+  return [
+    { x: 0.08, y: 0.06, width: 0.84, height: 0.61 },
+    { x: 0.10, y: 0.16, width: 0.80, height: 0.63 },
+  ];
+}
+
+function toTensor(bitmap: ImageBitmap, crop?: Crop): Float32Array {
   const size = 224;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) throw new Error("Canvas is unavailable in this browser.");
-  ctx.drawImage(bitmap, 0, 0, size, size);
+  if (crop) {
+    ctx.drawImage(bitmap, crop.x * bitmap.width, crop.y * bitmap.height,
+      crop.width * bitmap.width, crop.height * bitmap.height, 0, 0, size, size);
+  } else {
+    ctx.drawImage(bitmap, 0, 0, size, size);
+  }
   const rgba = ctx.getImageData(0, 0, size, size).data;
   const values = new Float32Array(3 * size * size);
   const mean = [0.485, 0.456, 0.406];
@@ -123,29 +138,51 @@ export async function classifyAppleInBrowser(
     createImageBitmap(file),
   ]);
   try {
-    const input = new ort.Tensor("float32", toTensor(bitmap), [1, 3, 224, 224]);
-    const output = await session.run({ image: input });
-    const logits = output.logits?.data;
-    if (!logits || logits.length !== 3 ||
-        !Array.from(logits).every(Number.isFinite)) {
-      throw new Error("The AI model returned an invalid prediction.");
-    }
-    const max = Math.max(...logits);
-    const weights = Array.from(logits, (value) => Math.exp(value - max));
-    const total = weights.reduce((a, b) => a + b, 0);
-    const probabilities = weights.map((value) => value / total);
     const meta = await getBrowserModelMetadata();
     if (!meta) throw new Error("The AI model metadata is missing.");
-    const appleClass = probabilities[0] >= probabilities[1] ? 0 : 1;
-    // Distinguish genuine negative evidence from ambiguous phone photos.
-    // Lack of 80% certainty alone must NOT be reported as "not an apple".
-    const label = probabilities[2] >= meta.not_apple_min_probability &&
-      probabilities[2] > probabilities[appleClass]
-      ? LABELS[2]
-      : probabilities[appleClass] >= meta.min_apple_class_probability &&
-          probabilities[2] <= meta.apple_max_nonapple_probability
-        ? LABELS[appleClass]
-        : meta.uncertain_label;
+    async function evaluate(crop?: Crop): Promise<number[]> {
+      const input = new ort.Tensor("float32", toTensor(bitmap, crop), [1, 3, 224, 224]);
+      const output = await session.run({ image: input });
+      const logits = output.logits?.data;
+      if (!logits || logits.length !== 3 || !Array.from(logits).every(Number.isFinite)) {
+        throw new Error("The AI model returned an invalid prediction.");
+      }
+      const peak = Math.max(...logits);
+      const weights = Array.from(logits, value => Math.exp(value - peak));
+      const sum = weights.reduce((a, b) => a + b, 0);
+      return weights.map(value => value / sum);
+    }
+    function classify(scores: number[]): typeof LABELS[number] | "Unable to Verify" {
+      const bestApple = scores[0] >= scores[1] ? 0 : 1;
+      return scores[2] >= meta.not_apple_min_probability && scores[2] > scores[bestApple]
+        ? LABELS[2]
+        : scores[bestApple] >= meta.min_apple_class_probability &&
+          scores[2] <= meta.apple_max_nonapple_probability
+          ? LABELS[bestApple]
+          : meta.uncertain_label;
+    }
+    let probabilities = await evaluate();
+    let label = classify(probabilities);
+
+    // Recheck upper/middle views of tall smartphone photos before rejecting
+    // small, off-center fruit. Require overwhelming apple evidence before
+    // overriding the full frame; otherwise abstain on contradictory views.
+    if (label === LABELS[2] || label === meta.uncertain_label) {
+      const candidates = portraitAppleCandidates(bitmap.width, bitmap.height);
+      const views: number[][] = [];
+      for (const crop of candidates) views.push(await evaluate(crop));
+      const credible = views.filter(scores =>
+        Math.max(scores[0], scores[1]) >= 0.90 && scores[2] <= 0.08
+      );
+      if (credible.length) {
+        const best = credible.sort((a, b) =>
+          Math.max(b[0], b[1]) - Math.max(a[0], a[1]))[0];
+        probabilities = best;
+        label = classify(best);
+      } else if (views.some(scores => classify(scores) !== LABELS[2])) {
+        label = meta.uncertain_label;
+      }
+    }
     return {
       label,
       probabilities: Object.fromEntries(
