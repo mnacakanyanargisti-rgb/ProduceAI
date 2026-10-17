@@ -138,8 +138,9 @@ export async function classifyAppleInBrowser(
     createImageBitmap(file),
   ]);
   try {
-    const meta = await getBrowserModelMetadata();
-    if (!meta) throw new Error("The AI model metadata is missing.");
+    const maybeMeta = await getBrowserModelMetadata();
+    if (!maybeMeta) throw new Error("The AI model metadata is missing.");
+    const meta: BrowserModelMetadata = maybeMeta;
     async function evaluate(crop?: Crop): Promise<number[]> {
       const input = new ort.Tensor("float32", toTensor(bitmap, crop), [1, 3, 224, 224]);
       const output = await session.run({ image: input });
