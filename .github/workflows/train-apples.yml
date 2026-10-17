@@ -2,10 +2,8 @@ name: Train apple classifier (manual)
 on:
   push:
     paths:
-      - '.github/workflows/train-apples.yml'
       - 'ml/fetch_apples.py'
       - 'ml/split.py'
-      - 'docs/TRAIN_REAL_MODEL.md'
       - 'ml/fetch_github_apples.py'
       - 'ml/fetch_non_apples.py'
       - 'ml/fetch_orchard_apples.py'
