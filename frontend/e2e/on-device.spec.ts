@@ -38,7 +38,10 @@ test("published MobileNet classifies an image on-device", async ({ page }) => {
   await page.getByRole("button", { name: "Classify Apple (AI)" }).click();
   await expect(page.getByText("MODEL PREDICTION")).toBeVisible({ timeout: 100_000 });
   await expect(page.getByText(/MobileNetV2 \(on-device ONNX\)/)).toBeVisible();
-  await expect(page.locator(".result h2")).toHaveText(/Fresh Apple|Rotten or Defective Apple|Not an Apple|Unable to Verify/);
+  await expect(page.locator(".result h2")).toHaveText(/Grade [ABC]|Not an Apple|Unable to Verify/);
+  if (await page.getByTestId("apple-grade").count()) {
+    await expect(page.getByTestId("freshness-score")).toContainText("%");
+  }
 });
 
 test("rejects real candy and cigarette photos as Not an Apple", async ({ page, request }) => {
